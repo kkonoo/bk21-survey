@@ -342,7 +342,7 @@ function fail(e){console.error(e);toast(e&&e.code==='permission-denied'?'권한�
 function showNoKey(msg){
   $('#who').innerHTML=''; $('#seg').hidden=true;
   $('#app').innerHTML=`<div class="panel login"><h2>BK21 실적 입력</h2>
-    <p class="msg ${msg&&msg.err?'err':''}">${esc(msg?msg.text:'BK 사무국에서 받은 교수님별 개인 링크로 들어와 주세요. 링크를 즐겨찾기 해 두시면 다음에도 바로 들어오실 수 있어요.')}</p></div>`;
+    <p class="msg ${msg&&msg.err?'err':''}">${esc(msg?msg.text:'안내받은 받은 교수님별 개인 링크로 들어와 주세요. 링크를 즐겨찾기 해 두시면 다음에도 바로 들어오실 수 있어요.')}</p></div>`;
 }
 
 /* ===== 데이터 읽기 ===== */
