@@ -283,18 +283,19 @@ const CATS = [
     {k:'topic',l:'주제 · 내용',t:'text',full:1},
     {k:'proof',l:'증빙 있음',t:'yn'},
    ], title:f=>f.inst, meta:f=>[f.kind, f.period, f.topic], chips:f=>[f.proof!=='예'&&['fix','증빙 확인 필요']]},
-  {key:'roster', name:'지도학생 명단', table:'첨부 2·3·4 · 2-2', rule:'<b>2021년 이후</b> 지도한 학생 전원 (재학·수료·졸업), 박사후연구원, 그리고 연구실의 <b>학부연구생·학석 연계과정생</b> (5단계는 학·석·박 연계를 봅니다). 26.2학기 참여대학원생 명단으로 미리 채웠으니 2021년 이후 졸업생과 학부생을 추가하고 <b>졸업생 진로</b>를 채워 주세요. 학생 수가 장학금 규모와 참여교수 결정의 기준이 됩니다.',
+  {key:'roster', name:'지도학생 명단', table:'첨부 2·3·4 · 2-2', rule:'<b>2021년 이후</b> 지도한 학생 전원 (재학·수료·졸업), 박사후연구원, 그리고 연구실의 <b>학부연구생·학석 연계과정생</b> (5단계는 학·석·박 연계를 봅니다). 26.2학기 참여대학원생 명단으로 미리 채웠으니 2021년 이후 졸업생과 학부생을 추가하고 <b>졸업생 진로</b>를 채워 주세요. 학생 수가 장학금 규모와 참여교수 결정의 기준이 됩니다. <b>BK 참여 여부와 관계없이 모두 넣고</b>, 지금 BK 참여 중인지만 따로 표시해 주세요 (26.2 명단에서 온 학생은 \'예\'로 되어 있어요).',
    fields:[
     {k:'name',l:'이름',t:'text',req:1},
     {k:'sid',l:'학번',t:'text'},
     {k:'degree',l:'과정',t:'select',o:'degree',req:1},
     {k:'status',l:'상태',t:'select',o:'status',req:1},
+    {k:'bk',l:'BK 참여 (현재)',t:'yn'},
     {k:'admit',l:'입학·임용 연월',t:'text',ph:'2023.03'},
     {k:'grad',l:'졸업 연월',t:'text',ph:'2026.02'},
     {k:'foreign',l:'외국인',t:'yn'},
     {k:'ckind',l:'졸업 후 진로',t:'select',o:'career'},
     {k:'career',l:'진로 기관 · 직위',t:'text',full:1,ph:'한국뇌연구원 연수연구원'},
-   ], title:f=>f.name+(f.sid?' · '+f.sid:''), meta:f=>[f.degree, f.status, f.admit&&('입학 '+f.admit), f.grad&&('졸업 '+f.grad), f.career], chips:f=>[f.foreign==='예'&&['pre','외국인'], f.status==='졸업'&&!f.ckind&&['fix','진로 미입력']]},
+   ], title:f=>f.name+(f.sid?' · '+f.sid:''), meta:f=>[f.degree, f.status, f.admit&&('입학 '+f.admit), f.grad&&('졸업 '+f.grad), f.career], chips:f=>[f.bk==='예'&&['rep','BK 참여'], f.foreign==='예'&&['pre','외국인'], f.status==='졸업'&&!f.ckind&&['fix','진로 미입력']]},
   {key:'stu', name:'지도학생 실적', table:'2-4 · 2-6 · 2-7 · 2-9', rule:'지도학생의 학회 발표, 특허·기술이전·창업, 수상, 해외 연구실 공동연구(15일 이상). 학생 주저자 <b>논문은 논문 탭</b>에 표시하면 돼요. 학생은 명단에서 고릅니다.',
    fields:[
     {k:'student',l:'학생',t:'student',req:1},
@@ -345,7 +346,7 @@ function showNoKey(msg){
 }
 
 /* ===== 데이터 읽기 ===== */
-const docOf=d=>Object.assign({id:d.id},d.data());
+const docOf=d=>{const x=Object.assign({id:d.id},d.data());if(x.cat==='roster'&&x.pre&&x.f&&x.f.bk===undefined)x.f.bk='예';return x};
 async function loadCommon(){
   const [rv,cfg]=await Promise.all([db.collection('reviewers').get(),db.doc('config/app').get()]);
   S.data.reviewers=rv.docs.map(docOf).sort((a,b)=>a.id.localeCompare(b.id,undefined,{numeric:true}));
@@ -510,7 +511,13 @@ function fieldHTML(fd,v){
   const type=fd.t==='date'?'date':fd.t==='number'?'number':'text';
   return `<label class="${fd.full?'full':''}">${lab}<input id="${id}" name="${fd.k}" type="${type}" value="${esc(v)}" placeholder="${esc(fd.ph||'')}">${fd.help?`<span class="help">${esc(fd.help)}</span>`:''}</label>`;
 }
-function formHTML(c,f,id){return `<form class="edit" data-cat="${c.key}" data-id="${id||''}" novalidate>${c.fields.map(fd=>fieldHTML(fd,f[fd.k])).join('')}<div class="bar"><span class="msg err" id="form-err"></span><button type="button" class="btn" data-act="cancel">취소</button><button class="btn primary" type="submit">저장</button></div></form>`}
+function topPick(c){
+  if(c.key!=='top') return '';
+  const src=itemsOf(curPid()).filter(i=>i.cat==='paper'||i.cat==='ip').sort((a,b)=>(b.f.rep==='예')-(a.f.rep==='예')||String(b.f.ym||b.f.date||'').localeCompare(String(a.f.ym||a.f.date||'')));
+  if(!src.length) return '';
+  return `<label class="full"><span>다른 실적에서 불러오기</span><select id="top-pick"><option value="">논문·특허 등에서 고르기 (대표 후보로 표시한 것이 위에 있어요)</option>${src.map(i=>`<option value="${i.id}">${i.f.rep==='예'?'[후보] ':''}[${i.cat==='paper'?'논문':esc(i.f.kind||'특허 등')}] ${esc(String(i.f.ym||i.f.date||'').slice(0,7)+' '+String(i.f.title||'').slice(0,80))}</option>`).join('')}</select><span class="help">고르면 종류·연도·업적이 채워지고, 써 둔 우수성이 있으면 설명 칸에 옮겨져요.</span></label>`;
+}
+function formHTML(c,f,id){return `<form class="edit" data-cat="${c.key}" data-id="${id||''}" novalidate>${topPick(c)}${c.fields.map(fd=>fieldHTML(fd,f[fd.k])).join('')}<div class="bar"><span class="msg err" id="form-err"></span><button type="button" class="btn" data-act="cancel">취소</button><button class="btn primary" type="submit">저장</button></div></form>`}
 
 function revHome(){
   if(!S.me.rev) return '<div class="empty">위에서 조교수를 고르세요.</div>';
@@ -644,6 +651,12 @@ document.addEventListener('change',async e=>{
   const t=e.target;
   if(t.id==='me-rev'){S.me.rev=t.value||null;S.open=null;await refresh();return}
   if(t.id==='flt'){S.filterFix=t.checked;render();return}
+  if(t.id==='top-pick'){const i=S.data.items.find(x=>x.id===t.value);if(!i)return;const f=i.f,el=t.closest('form').elements;
+    const type=i.cat==='paper'?'논문':({등록특허:'특허',기술이전:'기술이전',저서:'저서'}[f.kind]||'기타');
+    const out=i.cat==='paper'?[f.title,f.journal&&(f.journal+(f.ym?' ('+f.ym+')':'')),f.vol,f.pages,f.doi&&('DOI '+f.doi)].filter(Boolean).join('. '):[f.kind,f.title,f.country,f.number].filter(Boolean).join(' · ');
+    el.ttype.value=type; el.year.value=String(f.ym||f.date||'').slice(0,4); el.output.value=out;
+    if(f.merit&&!el.desc.value.trim()){el.desc.value=f.merit;el.desc.dispatchEvent(new Event('input',{bubbles:true}))}
+    return}
   if(t.dataset.pf){try{await touchProf(curPid(),{[t.dataset.pf]:t.value});toast('저장했어요')}catch(er){fail(er)} render();return}
   if(t.dataset.assign){const r=S.data.reviewers.find(x=>x.id===t.value);try{await db.doc('profs/'+t.dataset.assign).update({rev:t.value});const p=prof(t.dataset.assign);p.rev=t.value;toast('담당 조교수를 바꿨어요')}catch(er){fail(er)}return}
   if(t.name&&t.closest('.checks')){const box=t.closest('.checks');const fd=CAT[box.closest('form').dataset.cat].fields.find(f=>f.k===t.name);
