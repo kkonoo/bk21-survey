@@ -342,7 +342,7 @@ function fail(e){console.error(e);toast(e&&e.code==='permission-denied'?'권한�
 function showNoKey(msg){
   $('#who').innerHTML=''; $('#seg').hidden=true;
   $('#app').innerHTML=`<div class="panel login"><h2>BK21 실적 입력</h2>
-    <p class="msg ${msg&&msg.err?'err':''}">${esc(msg?msg.text:'BK 사무국에서 받은 교수님별 개인 링크로 들어와 주세요. 링크를 즐겨찾기 해 두시면 다음에도 바로 들어오실 수 있어요.')}</p></div>`;
+    <p class="msg ${msg&&msg.err?'err':''}">${esc(msg?msg.text:'안내 받은 교수님별 개인 링크로 들어와 주세요. 링크를 즐겨찾기 해 두시면 다음에도 바로 들어오실 수 있어요.')}</p></div>`;
 }
 
 /* ===== 데이터 읽기 ===== */
@@ -407,7 +407,7 @@ function render(){
   seg.innerHTML=roles.map(r=>`<button data-role="${r}" aria-pressed="${r===S.role}">${labels[r]}</button>`).join('');
   const who=$('#who');
   let sel='';
-  if(S.role==='rev'&&isAdmin()) sel=`<select id="me-rev" aria-label="조교수 선택"><option value="">조교수 선택</option>${S.data.reviewers.map(r=>`<option value="${r.id}" ${r.id===S.me.rev?'selected':''}>${esc(r.name)}</option>`).join('')}</select>`;
+  if(S.role==='rev'&&isAdmin()) sel=`<select id="me-rev" aria-label="담당 교수 선택"><option value="">담당 교수 선택</option>${S.data.reviewers.map(r=>`<option value="${r.id}" ${r.id===S.me.rev?'selected':''}>${esc(r.name)}</option>`).join('')}</select>`;
   who.innerHTML=`${sel}<span>${esc(S.name)}</span><button class="btn ghost sm" data-act="refresh">새로고침</button>`;
   const app=$('#app');
   if(S.busy){app.innerHTML='<div class="empty">불러오는 중…</div>';return}
@@ -446,10 +446,10 @@ function homePanel(p,mode){
       <dt><label for="hired">국내 최초 임용일</label></dt><dd><input id="hired" type="date" value="${esc(p.hired||'')}" data-pf="hired" style="max-width:180px" ${ro}>${(p.hired&&p.hired>='2017-03')||(!p.hired&&p.newflag)?' <span class="chip pre">신임</span>':''}</dd>
       <dt><label for="fund">기금교수</label></dt><dd><select id="fund" data-pf="fund" style="max-width:120px" ${ro}><option value="">선택</option>${['예','아니오'].map(o=>`<option ${o===p.fund?'selected':''}>${o}</option>`).join('')}</select></dd>
       <dt>지도학생</dt><dd>${itemsOf(p.id,'roster').filter(i=>['재학','수료'].includes(i.f.status)&&!['박사후연구원','학부연구생','학·석 연계과정'].includes(i.f.degree)).length}명 (재학·수료 대학원생)</dd>
-      <dt>담당 조교수</dt><dd>${p.rev&&revName(p.rev)===p.name?'본인':esc(revName(p.rev))}</dd>
+      <dt>담당 교수</dt><dd>${p.rev&&revName(p.rev)===p.name?'본인':esc(revName(p.rev))}</dd>
       <dt>확인 완료</dt><dd>${st.done} / ${CATS.length} 항목</dd>
     </dl><div class="prog" style="margin-top:12px"><i style="width:${st.done/CATS.length*100}%"></i></div>
-    ${mode==='prof'?`<p class="msg" style="margin-top:10px">구분·연구자등록번호가 틀리면 담당 조교수께 알려 주세요.</p>`:''}</div>
+    ${mode==='prof'?`<p class="msg" style="margin-top:10px">구분·연구자등록번호가 틀리면 담당 교수께 알려 주세요.</p>`:''}</div>
   </div>
   <div class="panel"><div class="head"><h2 style="font-size:17px">수정 요청 ${fixes.length}건</h2></div>
     ${fixes.length?`<div class="items">${fixes.map(i=>`<div class="item fix"><div><div class="t">${esc(CAT[i.cat].title(i.f))}</div><div class="meta"><span>${CAT[i.cat].name}</span></div></div><div class="acts"><button class="btn sm" data-goto="${i.cat}">열기</button></div><div class="note">의견: ${esc(i.rv.c)}</div></div>`).join('')}</div>`
@@ -493,7 +493,7 @@ function itemHTML(i,c,mode){
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"><span class="chip ${rv[0]}">${rv[1]}</span>${chips.map(x=>`<span class="chip ${x[0]}">${esc(x[1])}</span>`).join('')}</div></div>
     <div class="acts">${mode!=='rev'?`<button class="btn sm" data-edit="${i.id}">수정</button><button class="btn ghost sm" data-del="${i.id}">삭제</button>`:''}</div>
     ${i.memo?`<div class="note" style="color:var(--mute)">참고: ${esc(i.memo)}</div>`:''}
-    ${i.rv.s==='fix'&&mode==='prof'?`<div class="note">담당 조교수 의견: ${esc(i.rv.c)}</div>`:''}
+    ${i.rv.s==='fix'&&mode==='prof'?`<div class="note">담당 교수 의견: ${esc(i.rv.c)}</div>`:''}
     ${mode!=='prof'?`<div class="review"><button class="btn sm ok" data-rv="ok" data-id="${i.id}">확인</button><input id="c-${i.id}" placeholder="수정 요청 내용" value="${esc(i.rv.s==='fix'?i.rv.c:'')}"><button class="btn sm warn" data-rv="fix" data-id="${i.id}">수정 요청</button></div>`:''}
   </div>`;
 }
@@ -520,7 +520,7 @@ function topPick(c){
 function formHTML(c,f,id){return `<form class="edit" data-cat="${c.key}" data-id="${id||''}" novalidate>${topPick(c)}${c.fields.map(fd=>fieldHTML(fd,f[fd.k])).join('')}<div class="bar"><span class="msg err" id="form-err"></span><button type="button" class="btn" data-act="cancel">취소</button><button class="btn primary" type="submit">저장</button></div></form>`}
 
 function revHome(){
-  if(!S.me.rev) return '<div class="empty">위에서 조교수를 고르세요.</div>';
+  if(!S.me.rev) return '<div class="empty">위에서 담당 교수를 고르세요.</div>';
   const mine=S.data.profs.filter(p=>p.rev===S.me.rev);
   return `<div class="head"><h2>담당 교수님 ${mine.length}분</h2><span class="msg">마감 ${esc(S.data.deadline)}</span></div>
   <div class="cards">${mine.map(p=>{const st=stats(p);return `<button class="pcard" data-open="${p.id}">
@@ -536,12 +536,26 @@ function adminHome(){
   if(!P.length) return `<div class="panel"><div class="head"><h2>시작하기</h2></div><p class="msg">아직 자료가 없어요. 아래에서 <b>초기 데이터(seed.json)</b>를 가져오세요. 교수님별 개인 링크도 함께 만들어져요.</p></div>${setupPanels()}`;
   const rows=P.map(p=>{const st=stats(p);return `<tr class="click" data-open="${p.id}">
     <td>${esc(p.name)}</td><td>${esc(p.type)}</td><td class="num">${itemsOf(p.id,'roster').filter(i=>['재학','수료'].includes(i.f.status)).length}</td>
-    <td><select data-assign="${p.id}" aria-label="${esc(p.name)} 담당 조교수"><option value="">미배정</option>${S.data.reviewers.map(r=>`<option value="${r.id}" ${r.id===p.rev?'selected':''}>${esc(r.name)}</option>`).join('')}</select></td>
-    <td class="num">${st.done}/${CATS.length}</td><td class="num">${st.n}</td><td class="num">${st.fix}</td><td class="num">${esc(p.updated||'—')}</td></tr>`}).join('');
+    <td><select data-assign="${p.id}" aria-label="${esc(p.name)} 담당 교수"><option value="">미배정</option>${S.data.reviewers.map(r=>`<option value="${r.id}" ${r.id===p.rev?'selected':''}>${esc(r.name)}</option>`).join('')}</select></td>
+    <td class="num">${st.done}/${CATS.length}</td><td class="num">${st.n}</td><td class="num">${st.fix}</td><td class="num">${esc(p.updated||'—')}</td>
+    <td><button class="btn ghost sm" data-delprof="${p.id}">삭제</button></td></tr>`}).join('');
   const tot=P.reduce((a,p)=>a+stats(p).done,0), all=P.length*CATS.length;
   return `<div class="head"><h2>전체 진행 현황</h2><span class="msg">항목 확인 완료 ${tot} / ${all} · 마감 ${esc(S.data.deadline)}</span></div>
   <div class="prog" style="margin-bottom:14px"><i style="width:${tot/all*100}%"></i></div>
-  <div class="tablebox"><table><thead><tr><th>교수</th><th>기초/임상</th><th>재학·수료생</th><th>담당 조교수</th><th>확인 완료</th><th>실적</th><th>수정 요청</th><th>최근 수정</th></tr></thead><tbody>${rows}</tbody></table></div>
+  <div class="tablebox"><table><thead><tr><th>교수</th><th>기초/임상</th><th>재학·수료생</th><th>담당 교수</th><th>확인 완료</th><th>실적</th><th>수정 요청</th><th>최근 수정</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
+  <div class="panel" style="margin-top:18px"><div class="head"><h2 style="font-size:17px">교수 추가</h2></div>
+    <p class="msg">추가하면 그 교수님의 개인 링크도 함께 만들어져요. 담당 교수는 위 표에서 나중에 바꿀 수 있어요.</p>
+    <div class="export"><input id="np-name" placeholder="이름" style="max-width:120px" aria-label="교수 이름">
+      <select id="np-type" aria-label="기초/임상"><option>기초</option><option>임상</option></select>
+      <select id="np-rank" aria-label="직급"><option value="">직급</option>${['교수','부교수','조교수','기금교수(부교수대우)'].map(r=>`<option>${r}</option>`).join('')}</select>
+      <input id="np-rid" placeholder="연구자등록번호" style="max-width:150px" aria-label="연구자등록번호">
+      <select id="np-rev" aria-label="담당 교수"><option value="">담당 교수 미배정</option>${S.data.reviewers.map(r=>`<option value="${r.id}">${esc(r.name)}</option>`).join('')}</select>
+      <button class="btn primary" data-act="addprof">추가</button></div></div>
+  <div class="panel" style="margin-top:18px"><div class="head"><h2 style="font-size:17px">담당 교수</h2></div>
+    <p class="msg">담당 교수 권한을 주면 그 교수님 개인 링크에 "담당 교수 검토" 화면이 생겨요. 권한을 해제하면 맡던 교수님들은 미배정이 되니, 위 표에서 다시 배정해 주세요.</p>
+    <div class="tablebox"><table><thead><tr><th>이름</th><th>맡은 교수</th><th></th></tr></thead><tbody>${S.data.reviewers.map(r=>`<tr><td>${esc(r.name)}</td><td class="num">${P.filter(p=>p.rev===r.id).length}명</td><td><button class="btn ghost sm" data-revoke="${r.id}">권한 해제</button></td></tr>`).join('')||'<tr><td colspan="3">없음</td></tr>'}</tbody></table></div>
+    <div class="export" style="margin-top:12px"><select id="gr-prof" aria-label="담당 교수 권한을 줄 교수"><option value="">교수 선택</option>${P.filter(p=>!S.data.reviewers.some(r=>r.name===p.name)).map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select>
+      <button class="btn" data-act="grantrev">담당 교수 권한 주기</button></div></div>
   <div class="panel" style="margin-top:18px"><div class="head"><h2 style="font-size:17px">취합</h2></div>
     <p class="msg">엑셀 파일은 항목별 시트로 나뉘어 내려받아집니다. 표 복사는 한 항목을 엑셀에 바로 붙여 넣을 때 쓰세요.</p>
     <div class="export"><button class="btn primary" data-act="xlsx">엑셀 파일 내려받기</button>
@@ -561,7 +575,7 @@ function setupPanels(){
       <select id="nk-role" aria-label="새 링크 권한"><option value="admin">관리자 (전체 보기·취합)</option>${S.data.profs.map(p=>`<option value="${p.id}">${esc(p.name)} 교수님 대신 입력</option>`).join('')}</select>
       <button class="btn" data-act="newkey">링크 만들기</button></div></div>
   <div class="panel" style="margin-top:18px"><div class="head"><h2 style="font-size:17px">초기 데이터 가져오기</h2></div>
-    <p class="msg">seed.json 을 고르면 교수·조교수·실적이 저장됩니다. <b>같은 번호의 자료를 덮어쓰니</b> 처음 한 번만 쓰세요.</p>
+    <p class="msg">seed.json 을 고르면 교수·담당 교수 명단·실적이 저장됩니다. <b>같은 번호의 자료를 덮어쓰니</b> 처음 한 번만 쓰세요.</p>
     <div class="export"><input type="file" id="seed-file" accept=".json,application/json" style="max-width:320px"><button class="btn" data-act="seed">가져오기</button><span class="msg" id="seed-msg"></span></div></div>`;
 }
 
@@ -578,7 +592,7 @@ function catRows(ck){
 function exportXlsx(){
   if(!window.XLSX){toast('엑셀 도구를 불러오지 못했어요');return}
   const wb=XLSX.utils.book_new();
-  const ph=[['교수','기초/임상','직급','연구자등록번호','국내 최초 임용일','기금교수','담당 조교수','확인 완료','실적 건수','수정 요청','최근 수정']]
+  const ph=[['교수','기초/임상','직급','연구자등록번호','국내 최초 임용일','기금교수','담당 교수','확인 완료','실적 건수','수정 요청','최근 수정']]
     .concat(S.data.profs.map(p=>{const st=stats(p);return [p.name,p.type,p.rank||'',p.rid||'',p.hired||'',p.fund||'',revName(p.rev),st.done+'/'+CATS.length,st.n,st.fix,p.updated||'']}));
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(ph),'교수 현황');
   CATS.forEach(c=>XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(catRows(c.key)),c.name.replace(/[\\/?*\[\]:]/g,'·').slice(0,31)));
@@ -587,13 +601,65 @@ function exportXlsx(){
 
 /* ===== 개인 링크 ===== */
 const linkOf=k=>BASE_URL+'?k='+k;
-function roleText(l){const r=[];if(l.admin)r.push('관리자');if(l.prof)r.push('교수'+((prof(l.prof)||{}).name&&(prof(l.prof).name!==l.name)?' ('+prof(l.prof).name+' 대리)':''));if(l.rev)r.push('담당 조교수');return r.join(' · ')||'—'}
+function roleText(l){const r=[];if(l.admin)r.push('관리자');if(l.prof)r.push('교수'+((prof(l.prof)||{}).name&&(prof(l.prof).name!==l.name)?' ('+prof(l.prof).name+' 대리)':''));if(l.rev)r.push('담당 교수');return r.join(' · ')||'—'}
 function newToken(){const a=new Uint8Array(16);crypto.getRandomValues(a);return btoa(String.fromCharCode(...a)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
 async function loadLinks(){try{const q=await db.collection('keys').get();S.links=q.docs.map(docOf).sort((a,b)=>a.name.localeCompare(b.name,'ko'))}catch(e){fail(e)}render()}
 async function newKey(){
   const name=$('#nk-name').value.trim(), r=$('#nk-role').value; if(!name){toast('이름을 넣어 주세요');$('#nk-name').focus();return}
   const t=newToken(), x=r==='admin'?{name,admin:true}:{name,prof:r};
   try{await db.doc('keys/'+t).set(x);await loadLinks();toast('링크를 만들었어요')}catch(e){fail(e)}
+}
+
+/* ===== 교수 추가·삭제 ===== */
+async function addProf(){
+  const name=$('#np-name').value.trim(); if(!name){toast('이름을 넣어 주세요');$('#np-name').focus();return}
+  if(S.data.profs.some(p=>p.name===name)&&!confirm(name+' 교수님이 이미 있어요. 그래도 추가할까요?')) return;
+  const ref=db.collection('profs').doc(), t=newToken();
+  const p={name,type:$('#np-type').value,rank:$('#np-rank').value,rid:$('#np-rid').value.trim(),hired:'',fund:'',rev:$('#np-rev').value,done:{},updated:''};
+  try{const b=db.batch();b.set(ref,p);b.set(db.doc('keys/'+t),{name,prof:ref.id});await b.commit();
+    putProf(Object.assign({id:ref.id},p)); if(S.links) await loadLinks();
+    render(); toast(name+' 교수님을 추가했어요. 개인 링크는 "링크 목록 보기"에 있어요');
+  }catch(e){fail(e)}
+}
+async function delProf(pid){
+  const p=prof(pid); if(!p) return; const n=itemsOf(pid).length;
+  if(!confirm(`${p.name} 교수님을 삭제할까요?\n입력된 실적 ${n}건과 개인 링크도 함께 지워지고, 되돌릴 수 없어요.`)) return;
+  try{
+    const [it,ks]=await Promise.all([db.collection('items').where('prof','==',pid).get(),db.collection('keys').where('prof','==',pid).get()]);
+    // 관리자·담당 교수 링크는 지우지 않고 교수 연결만 뗀다
+    const ops=[...it.docs.map(d=>[d.ref]),...ks.docs.map(d=>{const x=d.data();return x.admin||x.rev?[d.ref,{prof:firebase.firestore.FieldValue.delete()}]:[d.ref]}),[db.doc('profs/'+pid)]];
+    for(let k=0;k<ops.length;k+=400){const b=db.batch();ops.slice(k,k+400).forEach(([r,u])=>u?b.update(r,u):b.delete(r));await b.commit()}
+    S.data.profs=S.data.profs.filter(x=>x.id!==pid); S.data.items=S.data.items.filter(x=>x.prof!==pid);
+    if(S.links) await loadLinks();
+    render(); toast(p.name+' 교수님을 삭제했어요');
+  }catch(e){fail(e)}
+}
+
+/* ===== 담당 교수 권한 ===== */
+async function grantRev(){
+  const pid=$('#gr-prof').value, p=prof(pid); if(!p){toast('교수님을 골라 주세요');return}
+  const n=Math.max(-1,...S.data.reviewers.map(r=>+String(r.id).replace(/\D/g,'')||0))+1, rid='r'+n;
+  try{
+    const ks=(await db.collection('keys').where('prof','==',pid).get()).docs.filter(d=>d.data().name===p.name);
+    const b=db.batch(); b.set(db.doc('reviewers/'+rid),{name:p.name,major:''});
+    if(ks.length) ks.forEach(d=>b.update(d.ref,{rev:rid})); else b.set(db.doc('keys/'+newToken()),{name:p.name,prof:pid,rev:rid});
+    await b.commit(); S.data.reviewers.push({id:rid,name:p.name,major:''}); if(S.links) await loadLinks();
+    render(); toast(p.name+' 교수님께 담당 교수 권한을 드렸어요');
+  }catch(e){fail(e)}
+}
+async function revokeRev(rid){
+  const r=S.data.reviewers.find(x=>x.id===rid); if(!r) return;
+  const n=S.data.profs.filter(p=>p.rev===rid).length;
+  if(!confirm(`${r.name} 교수님의 담당 교수 권한을 해제할까요?`+(n?`\n맡고 있던 교수님 ${n}명은 미배정이 됩니다.`:''))) return;
+  try{
+    const [ks,ps]=await Promise.all([db.collection('keys').where('rev','==',rid).get(),db.collection('profs').where('rev','==',rid).get()]);
+    const b=db.batch(); b.delete(db.doc('reviewers/'+rid));
+    ks.docs.forEach(d=>b.update(d.ref,{rev:firebase.firestore.FieldValue.delete()}));
+    ps.docs.forEach(d=>b.update(d.ref,{rev:''}));
+    await b.commit();
+    S.data.reviewers=S.data.reviewers.filter(x=>x.id!==rid); S.data.profs.forEach(p=>{if(p.rev===rid)p.rev=''}); if(S.links) await loadLinks();
+    render(); toast(r.name+' 교수님의 담당 교수 권한을 해제했어요');
+  }catch(e){fail(e)}
 }
 
 /* ===== 쓰기 ===== */
@@ -623,6 +689,8 @@ document.addEventListener('click',async e=>{
   if(b.dataset.goto){S.cat=b.dataset.goto;render();return}
   if(b.dataset.open&&!e.target.closest('select')){S.open=b.dataset.open;S.cat='home';if(S.role==='rev'){S.busy=true;render();try{await loadProf(S.open)}catch(er){fail(er)}S.busy=false}render();return}
   const pid=curPid();
+  if(b.dataset.delprof){await delProf(b.dataset.delprof);return}
+  if(b.dataset.revoke){await revokeRev(b.dataset.revoke);return}
   if(b.dataset.edit){S.editing=b.dataset.edit;render();return}
   if(b.dataset.del){
     if(!b.dataset.confirm){b.dataset.confirm=1;b.textContent='삭제 확인';b.classList.add('warn');return}
@@ -644,6 +712,8 @@ document.addEventListener('click',async e=>{
   if(act==='seed') await seedImport();
   if(act==='links') await loadLinks();
   if(act==='newkey') await newKey();
+  if(act==='addprof') await addProf();
+  if(act==='grantrev') await grantRev();
   if(act==='copylinks'){const t=S.links.map(l=>l.name+'\t'+linkOf(l.id)).join('\n');try{await navigator.clipboard.writeText(t);toast('복사했어요. 엑셀에 붙여 넣으세요')}catch(_){toast('복사하지 못했어요. 링크 칸을 직접 선택해 주세요')}}
   if(act==='deadline'){const v=$('#deadline').value.trim();try{await db.doc('config/app').set({deadline:v},{merge:true});S.data.deadline=v;toast('마감일을 저장했어요')}catch(er){fail(er)}}
 });
@@ -658,7 +728,7 @@ document.addEventListener('change',async e=>{
     if(f.merit&&!el.desc.value.trim()){el.desc.value=f.merit;el.desc.dispatchEvent(new Event('input',{bubbles:true}))}
     return}
   if(t.dataset.pf){try{await touchProf(curPid(),{[t.dataset.pf]:t.value});toast('저장했어요')}catch(er){fail(er)} render();return}
-  if(t.dataset.assign){const r=S.data.reviewers.find(x=>x.id===t.value);try{await db.doc('profs/'+t.dataset.assign).update({rev:t.value});const p=prof(t.dataset.assign);p.rev=t.value;toast('담당 조교수를 바꿨어요')}catch(er){fail(er)}return}
+  if(t.dataset.assign){const r=S.data.reviewers.find(x=>x.id===t.value);try{await db.doc('profs/'+t.dataset.assign).update({rev:t.value});const p=prof(t.dataset.assign);p.rev=t.value;toast('담당 교수를 바꿨어요')}catch(er){fail(er)}return}
   if(t.name&&t.closest('.checks')){const box=t.closest('.checks');const fd=CAT[box.closest('form').dataset.cat].fields.find(f=>f.k===t.name);
     if(fd.max&&box.querySelectorAll('input:checked').length>fd.max){t.checked=false;toast(`최대 ${fd.max}개까지 고를 수 있어요`)}}
 });
