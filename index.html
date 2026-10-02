@@ -190,7 +190,7 @@ const FIELD_OPTS = {
 };
 const YEARS = Array.from({length:Math.max(2026,new Date().getFullYear())-2020},(_,k)=>String(2021+k));
 const CATS = [
-  {key:'paper', name:'논문', table:'3-2 · 3-3', rule:'<b>2021.1 이후</b> 게재된 SCI(E)·SSCI·A&HCI·등재(후보)·Scopus 논문 전체 (경북대 소속 표기, 권·호·쪽이 있는 논문). DOI만 넣고 <b>자동 채우기</b>를 누르세요. 미리 채운 <b>IF·JCR 상위 %는 연도가 다를 수 있으니 S2Journal·JCR에서 확인해 고쳐 주세요</b> (출판 당시: 7–12월 출판은 전년도, 1–6월 출판은 전전년도 JCR). 신청서는 <b>대표업적 1인당 3건</b>(정성 70%)과 <b>전체 논문</b>(정량 30%)을 함께 봅니다.',
+  {key:'paper', name:'논문', table:'3-2 · 3-3', rule:'<b>2021.1 이후</b> 게재된 SCI(E)·SSCI·A&HCI·등재(후보)·Scopus 논문 전체 (경북대 소속 표기, 권·호·쪽이 있는 논문). DOI만 넣고 <b>자동 채우기</b>를 누르세요. <b>IF와 JCR 상위 %를 S2Journal·JCR에서 확인해 넣어 주세요</b> (참고 칸의 IF는 중간평가 1차조사 값, 2025년 기준) (출판 당시: 7–12월 출판은 전년도, 1–6월 출판은 전전년도 JCR). 신청서는 <b>대표업적 1인당 3건</b>(정성 70%)과 <b>전체 논문</b>(정량 30%)을 함께 봅니다.',
    fields:[
     {k:'doi',l:'DOI',t:'doi',req:1,full:1},
     {k:'title',l:'논문 제목',t:'text',req:1,full:1},
@@ -211,7 +211,7 @@ const CATS = [
     {k:'pinst',l:'국가 / 소속기관 (국제일 때)',t:'text',ph:'미국 / Harvard Medical School'},
     {k:'rep',l:'대표업적 후보로 추천',t:'yn'},
     {k:'merit',l:'대표업적 우수성 (후보일 때만)',t:'area',max:500,full:1},
-   ], title:f=>f.title, meta:f=>[f.journal, f.ym, f.vol&&('Vol. '+f.vol), f.if&&('IF '+f.if+(f.jcr?' · 상위 '+f.jcr+'%':'')+' (출판 당시)'), f.if_cur&&('IF '+f.if_cur+(f.jcr_cur?' · 상위 '+f.jcr_cur+'%':'')+' (기준 '+(S.data.jcrBase||'')+')'), f.role, f.nauth&&('저자 '+f.nauth+'명'), f.doi&&('DOI '+f.doi)], chips:f=>[f.rep==='예'&&['rep','대표 후보'], f.student&&['pre','학생 주저자: '+f.student], f.intl==='예'&&['pre','국제공동'], f.rep==='예'&&!f.merit&&['fix','우수성 미작성']]},
+   ], title:f=>f.title, meta:f=>[f.journal, f.ym, f.vol&&('Vol. '+f.vol), f.if&&('IF '+f.if+(f.jcr?' · 상위 '+f.jcr+'%':'')+' (출판 당시)'), f.if_cur&&('IF '+f.if_cur+(f.jcr_cur?' · 상위 '+f.jcr_cur+'%':'')+' (기준 '+(S.data.jcrBase||'')+')'), f.role, f.nauth&&('저자 '+f.nauth+'명'), f.doi&&('DOI '+f.doi)], chips:f=>[f.rep==='예'&&['rep','대표 후보'], f.student&&['pre','학생 주저자: '+f.student], f.intl==='예'&&['pre','국제공동'], f.rep==='예'&&!f.merit&&['fix','우수성 미작성'], !f.jcr&&['fix','JCR 상위 % 미입력']]},
   {key:'grant', name:'연구비', table:'3-1', rule:'2021.1 이후 수행 과제. 신청서는 <b>연도별 입금액</b>(입금일 기준)으로 1인당 수주액을 계산합니다. <b>공동연구원 참여 과제도</b> 입력해 주세요 (경북대 산단 입금분 또는 책임자 지분확인서로 인정). 교내 연구비·민간부담금 제외, 금액은 천원 단위.',
    fields:[
     {k:'title',l:'과제명',t:'text',req:1,full:1},
@@ -589,7 +589,7 @@ function itemHTML(i,c,mode){
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"><span class="chip ${rv[0]}">${rv[1]}</span>${chips.map(x=>`<span class="chip ${x[0]}">${esc(x[1])}</span>`).join('')}</div></div>
     <div class="acts">${mode!=='rev'?`${S.data.uploadUrl?`<button class="btn sm" data-attach="${i.id}">증빙 첨부</button>`:''}<button class="btn sm" data-edit="${i.id}">수정</button><button class="btn ghost sm" data-del="${i.id}">삭제</button>`:''}</div>
     ${(i.files||[]).length?`<div class="files"><span>증빙</span>${i.files.map(x=>`<span><a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.n)}</a>${mode!=='rev'?`<button class="btn ghost sm" data-unfile="${i.id}" data-fid="${esc(x.id)}" aria-label="${esc(x.n)} 연결 해제">×</button>`:''}</span>`).join('')}</div>`:''}
-    ${i.memo?`<div class="note" style="color:var(--mute)">참고: ${esc(i.memo)}</div>`:''}
+    ${i.memo?`<div class="note" style="color:var(--mute)">참고${i.pre&&i.cat==='paper'?' (중간평가 1차조사, 2025년 기준)':''}: ${esc(i.memo)}${i.cat==='paper'?` · JCR 상위 ${i.f.jcr?esc(i.f.jcr)+'%':'% 미입력'}`:''}</div>`:''}
     ${i.rv.s==='fix'&&mode==='prof'?`<div class="note">담당 교수 의견: ${esc(i.rv.c)}</div>`:''}
     ${mode!=='prof'?`<div class="review"><button class="btn sm ok" data-rv="ok" data-id="${i.id}">확인</button><input id="c-${i.id}" placeholder="수정 요청 내용" value="${esc(i.rv.s==='fix'?i.rv.c:'')}"><button class="btn sm warn" data-rv="fix" data-id="${i.id}">수정 요청</button></div>`:''}
   </div>`;
@@ -615,7 +615,6 @@ function topPick(c){
   return `<label class="full"><span>다른 실적에서 불러오기</span><select id="top-pick"><option value="">논문·특허 등에서 고르기 (대표 후보로 표시한 것이 위에 있어요)</option>${src.map(i=>`<option value="${i.id}">${i.f.rep==='예'?'[후보] ':''}[${i.cat==='paper'?'논문':esc(i.f.kind||'특허 등')}] ${esc(String(i.f.ym||i.f.date||'').slice(0,7)+' '+String(i.f.title||'').slice(0,80))}</option>`).join('')}</select><span class="help">고르면 종류·연도·업적이 채워지고, 써 둔 우수성이 있으면 설명 칸에 옮겨져요.</span></label>`;
 }
 function formHTML(c,f,id){
-  if(c.key==='paper'&&id&&!f.if){const it=S.data.items.find(x=>x.id===id);const m=String(it&&it.memo||'').match(/IF\s*([\d.]+)/i);if(m)f=Object.assign({},f,{if:m[1]})}
   return `<form class="edit" data-cat="${c.key}" data-id="${id||''}" novalidate>${topPick(c)}${c.fields.map(fd=>fieldHTML(fd,f[fd.k])).join('')}<div class="bar"><span class="msg err" id="form-err"></span><button type="button" class="btn" data-act="cancel">취소</button><button class="btn primary" type="submit">저장</button></div></form>`}
 
 function revHome(){
@@ -909,17 +908,17 @@ async function jcrFill(){
   const msg=$('#jcr-msg'); if(!S.data.jcrYears.length){msg.textContent='먼저 JCR 자료를 올려 주세요.';return}
   const base=Number(S.data.jcrBase)||0;
   const todo=S.data.items.filter(i=>i.cat==='paper'&&i.f.journal);
-  msg.textContent=`찾는 중… 0 / ${todo.length}`; const ups=[]; let k=0, nPub=0, nCur=0, nMemo=0;
+  msg.textContent=`찾는 중… 0 / ${todo.length}`; const ups=[]; let k=0, nPub=0, nCur=0;
   for(const i of todo){k++;if(k%20===0)msg.textContent=`찾는 중… ${k} / ${todo.length}`;
     const f=Object.assign({},i.f);
     if(!f.if||!f.jcr){const r=await jcrExact([],f.journal,pubJcrYear(f.ym));
       if(r){if(!f.if&&r.if!=null)f.if=String(r.if);if(!f.jcr&&r.pct!=null)f.jcr=String(r.pct);nPub++}
-      else{const mm=String(i.memo||'').match(/IF\s*([\d.]+)/i);if(!f.if&&mm){f.if=mm[1];nMemo++}}}
+}
     if(base){const r=await jcrExact([],f.journal,base);const nv=r?[r.if!=null?String(r.if):'',r.pct!=null?String(r.pct):'']:['',''];
       if(nv[0]!==(f.if_cur||'')||nv[1]!==(f.jcr_cur||'')){f.if_cur=nv[0];f.jcr_cur=nv[1]}if(r)nCur++}
     if(JSON.stringify(f)!==JSON.stringify(i.f)) ups.push([i,f])}
   if(!ups.length){msg.textContent='바뀌는 논문이 없어요.';return}
-  if(!confirm(`논문 ${ups.length}건을 고칠까요?\n· 출판 당시 IF·상위 %: 빈 칸만 채움 (JCR ${nPub}건, 1차조사 메모 IF ${nMemo}건)\n· 기준 연도${base?' '+base:''} IF·상위 %: ${base?`전부 다시 계산 (찾음 ${nCur}건)`:'기준 연도가 정해지지 않아 건너뜀'}`)){msg.textContent='';return}
+  if(!confirm(`논문 ${ups.length}건을 고칠까요?\n· 출판 당시 IF·상위 %: 빈 칸만 채움 (JCR ${nPub}건)\n· 기준 연도${base?' '+base:''} IF·상위 %: ${base?`전부 다시 계산 (찾음 ${nCur}건)`:'기준 연도가 정해지지 않아 건너뜀'}`)){msg.textContent='';return}
   try{for(let a=0;a<ups.length;a+=400){const b=db.batch();ups.slice(a,a+400).forEach(([i,f])=>b.update(db.doc('items/'+i.id),{f}));await b.commit()}
     ups.forEach(([i,f])=>i.f=f); msg.textContent=`${ups.length}건 고쳤어요.`}catch(e){fail(e)}
 }
