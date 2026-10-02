@@ -190,7 +190,7 @@ const FIELD_OPTS = {
 };
 const YEARS = Array.from({length:Math.max(2026,new Date().getFullYear())-2020},(_,k)=>String(2021+k));
 const CATS = [
-  {key:'paper', name:'논문', table:'3-2 · 3-3', rule:'<b>2021.1 이후</b> 게재된 SCI(E)·SSCI·A&HCI·등재(후보)·Scopus 논문 전체 (경북대 소속 표기, 권·호·쪽이 있는 논문). DOI만 넣고 <b>자동 채우기</b>를 누르세요. 신청서는 <b>대표업적 1인당 3건</b>(정성 70%)과 <b>전체 논문</b>(정량 30%)을 함께 봅니다.',
+  {key:'paper', name:'논문', table:'3-2 · 3-3', rule:'<b>2021.1 이후</b> 게재된 SCI(E)·SSCI·A&HCI·등재(후보)·Scopus 논문 전체 (경북대 소속 표기, 권·호·쪽이 있는 논문). DOI만 넣고 <b>자동 채우기</b>를 누르세요. 미리 채운 <b>IF·JCR 상위 %는 연도가 다를 수 있으니 S2Journal·JCR에서 확인해 고쳐 주세요</b> (출판 당시: 7–12월 출판은 전년도, 1–6월 출판은 전전년도 JCR). 신청서는 <b>대표업적 1인당 3건</b>(정성 70%)과 <b>전체 논문</b>(정량 30%)을 함께 봅니다.',
    fields:[
     {k:'doi',l:'DOI',t:'doi',req:1,full:1},
     {k:'title',l:'논문 제목',t:'text',req:1,full:1},
@@ -198,8 +198,10 @@ const CATS = [
     {k:'ym',l:'게재연월',t:'text',ph:'2025.07',req:1},
     {k:'vol',l:'권(호)',t:'text',ph:'16(1)'},
     {k:'pages',l:'쪽',t:'text',ph:'201-230'},
-    {k:'if',l:'IF (게재연도 JCR)',t:'text',ph:'5.2',help:'자동 채우기 때 JCR 자료로 채워져요'},
-    {k:'jcr',l:'JCR 상위 %',t:'text',ph:'12.5',help:'분야 순위 ÷ 분야 저널 수 × 100 (여러 분야면 가장 좋은 값)'},
+    {k:'if',l:'IF (출판 당시 JCR)',t:'text',ph:'5.2',help:'출판 시점에 나와 있던 최신 JCR (7월 이후 출판이면 전년도, 1–6월이면 전전년도 JCR). 자동 채우기로 들어와요'},
+    {k:'jcr',l:'JCR 상위 % (출판 당시)',t:'text',ph:'12.5',help:'분야 순위 ÷ 분야 저널 수 × 100 (여러 분야면 가장 좋은 값)'},
+    {k:'if_cur',l:'IF (기준 연도 JCR)',t:'text',help:'관리자가 정한 기준 연도 JCR 값 (자동)'},
+    {k:'jcr_cur',l:'JCR 상위 % (기준 연도)',t:'text',help:'관리자가 정한 기준 연도 JCR 값 (자동)'},
     {k:'role',l:'본인 저자 역할',t:'select',o:'role',req:1},
     {k:'nauth',l:'총 저자 수',t:'number',help:'자동 채우기로 들어옵니다'},
     {k:'nmain',l:'주저자 수 (제1·교신, 중복 제외)',t:'number'},
@@ -209,7 +211,7 @@ const CATS = [
     {k:'pinst',l:'국가 / 소속기관 (국제일 때)',t:'text',ph:'미국 / Harvard Medical School'},
     {k:'rep',l:'대표업적 후보로 추천',t:'yn'},
     {k:'merit',l:'대표업적 우수성 (후보일 때만)',t:'area',max:500,full:1},
-   ], title:f=>f.title, meta:f=>[f.journal, f.ym, f.vol&&('Vol. '+f.vol), f.if&&('IF '+f.if), f.jcr&&('JCR 상위 '+f.jcr+'%'), f.role, f.nauth&&('저자 '+f.nauth+'명'), f.doi&&('DOI '+f.doi)], chips:f=>[f.rep==='예'&&['rep','대표 후보'], f.student&&['pre','학생 주저자: '+f.student], f.intl==='예'&&['pre','국제공동'], f.rep==='예'&&!f.merit&&['fix','우수성 미작성']]},
+   ], title:f=>f.title, meta:f=>[f.journal, f.ym, f.vol&&('Vol. '+f.vol), f.if&&('IF '+f.if+(f.jcr?' · 상위 '+f.jcr+'%':'')+' (출판 당시)'), f.if_cur&&('IF '+f.if_cur+(f.jcr_cur?' · 상위 '+f.jcr_cur+'%':'')+' (기준 '+(S.data.jcrBase||'')+')'), f.role, f.nauth&&('저자 '+f.nauth+'명'), f.doi&&('DOI '+f.doi)], chips:f=>[f.rep==='예'&&['rep','대표 후보'], f.student&&['pre','학생 주저자: '+f.student], f.intl==='예'&&['pre','국제공동'], f.rep==='예'&&!f.merit&&['fix','우수성 미작성']]},
   {key:'grant', name:'연구비', table:'3-1', rule:'2021.1 이후 수행 과제. 신청서는 <b>연도별 입금액</b>(입금일 기준)으로 1인당 수주액을 계산합니다. <b>공동연구원 참여 과제도</b> 입력해 주세요 (경북대 산단 입금분 또는 책임자 지분확인서로 인정). 교내 연구비·민간부담금 제외, 금액은 천원 단위.',
    fields:[
     {k:'title',l:'과제명',t:'text',req:1,full:1},
@@ -318,7 +320,7 @@ const CAT = Object.fromEntries(CATS.map(c=>[c.key,c]));
 /* 작성 예시 (가상의 자료) */
 const EX = {
   paper:[
-    {doi:'10.1038/s41467-024-00000-0',title:'Single-cell atlas of the aging mouse hippocampus reveals microglial states linked to memory decline',journal:'NATURE COMMUNICATIONS',ym:'2024.05',vol:'15(1)',pages:'4321',if:'14.7',jcr:'8.5',role:'교신저자',nauth:'12',nmain:'2',student:'홍길동',intl:'예',partner:'John Smith',pinst:'미국 / Stanford University',rep:'예',merit:'노화 해마의 미세아교세포 상태를 단일세포 수준에서 처음 규명하여 ...'},
+    {doi:'10.1038/s41467-024-00000-0',title:'Single-cell atlas of the aging mouse hippocampus reveals microglial states linked to memory decline',journal:'NATURE COMMUNICATIONS',ym:'2024.05',vol:'15(1)',pages:'4321',if:'14.7',jcr:'8.5',if_cur:'15.7',jcr_cur:'7.4',role:'교신저자',nauth:'12',nmain:'2',student:'홍길동',intl:'예',partner:'John Smith',pinst:'미국 / Stanford University',rep:'예',merit:'노화 해마의 미세아교세포 상태를 단일세포 수준에서 처음 규명하여 ...'},
     {doi:'10.3390/ijms25000000',title:'Effect of compound X on hepatic lipid metabolism in high-fat diet mice',journal:'INTERNATIONAL JOURNAL OF MOLECULAR SCIENCES',ym:'2023.11',vol:'24(22)',pages:'16001',if:'4.9',jcr:'25.0',role:'제1저자',nauth:'6',nmain:'2',intl:'아니오'},
     {doi:'10.1016/j.example.2022.000000',title:'Multicenter cohort study of biomarker Y in chronic kidney disease',journal:'KIDNEY INTERNATIONAL',ym:'2022.03',vol:'101(3)',pages:'500-512',if:'19.6',jcr:'1.2',role:'기타저자',nauth:'25',nmain:'3',intl:'아니오'},
   ],
@@ -412,7 +414,7 @@ const db = firebase.firestore();
 const TS = () => firebase.firestore.FieldValue.serverTimestamp();
 
 /* ===== 상태 ===== */
-const S = {data:{profs:[],items:[],reviewers:[],deadline:'추후 공지', uploadUrl:'', jcrYears:[]}, user:null, key:'', name:'', links:null, roles:[], role:null,
+const S = {data:{profs:[],items:[],reviewers:[],deadline:'추후 공지', uploadUrl:'', jcrYears:[], jcrBase:''}, user:null, key:'', name:'', links:null, roles:[], role:null,
   me:{prof:null,rev:null}, cat:'home', open:null, editing:null, filterFix:false, exportCat:'paper', tsv:'', busy:false, range:{from:'',to:''}, jcrCache:{}, attachFor:null};
 const $ = s=>document.querySelector(s);
 const esc = v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -438,7 +440,7 @@ const docOf=d=>{const x=Object.assign({id:d.id},d.data());if(x.cat==='roster'&&x
 async function loadCommon(){
   const [rv,cfg]=await Promise.all([db.collection('reviewers').get(),db.doc('config/app').get()]);
   S.data.reviewers=rv.docs.map(docOf).sort((a,b)=>a.id.localeCompare(b.id,undefined,{numeric:true}));
-  if(cfg.exists){const c=cfg.data();S.data.deadline=c.deadline||'추후 공지';S.data.uploadUrl=c.uploadUrl||'';S.data.jcrYears=c.jcrYears||[]}
+  if(cfg.exists){const c=cfg.data();S.data.deadline=c.deadline||'추후 공지';S.data.uploadUrl=c.uploadUrl||'';S.data.jcrYears=c.jcrYears||[];S.data.jcrBase=c.jcrBase||''}
 }
 function putProf(p){const i=S.data.profs.findIndex(x=>x.id===p.id);if(i>=0)S.data.profs[i]=p;else S.data.profs.push(p);S.data.profs.sort((a,b)=>a.name.localeCompare(b.name,'ko'))}
 function putItems(pid,list){S.data.items=S.data.items.filter(i=>i.prof!==pid).concat(list)}
@@ -681,9 +683,11 @@ function setupPanels(){
     <p class="msg">Apps Script 웹 앱 주소를 넣으면 실적마다 <b>증빙 첨부</b> 버튼이 생기고, 파일은 드라이브 <b>BK21_증빙/교수명/항목</b> 폴더에 저장돼요.</p>
     <div class="export"><input id="upurl" value="${esc(S.data.uploadUrl)}" placeholder="https://script.google.com/macros/s/…/exec" aria-label="업로드 주소"><button class="btn" data-act="upurl">저장</button></div></div>
   <div class="panel" style="margin-top:18px"><div class="head"><h2 style="font-size:17px">JCR 자료 (IF · 상위 %)</h2></div>
-    <p class="msg">JCR·S2Journal에서 받은 엑셀을 올리면 논문 자동 채우기 때 <b>게재연도 IF와 JCR 상위 %</b>가 들어가요. 분야별로 여러 파일을 올려도 되고, 저널이 여러 분야에 있으면 가장 좋은 순위를 씁니다. 저장된 연도: <b>${S.data.jcrYears.length?S.data.jcrYears.slice().sort().join(', '):'없음'}</b></p>
-    <div class="export"><input type="file" id="jcr-file" accept=".xlsx,.xls,.csv" style="max-width:300px"><input id="jcr-year" placeholder="JCR 연도 (예: 2024)" style="max-width:170px" aria-label="JCR 연도"><button class="btn" data-act="jcrup">올리기</button>
-      <button class="btn" data-act="jcrfill">논문 IF·JCR 빈 칸 채우기</button></div><p class="msg" id="jcr-msg"></p></div>
+    <p class="msg">JCR에서 받은 CSV·엑셀(여러 개 한꺼번에 가능)이나 조회표를 올리면 논문 자동 채우기 때 <b><b>출판 당시 JCR</b>(7월 이후 출판은 전년도, 1–6월은 전전년도)과 <b>기준 연도 JCR</b>(신청용, 예: 올해 기준) 두 가지 IF·상위 %가 들어가요. 분야별로 여러 파일을 올려도 되고, 저널이 여러 분야에 있으면 가장 좋은 순위를 씁니다. 저장된 연도: <b>${S.data.jcrYears.length?S.data.jcrYears.slice().sort().join(', '):'없음'}</b></p>
+    <div class="export"><input type="file" id="jcr-file" accept=".xlsx,.xls,.csv" multiple style="max-width:300px"><input id="jcr-year" placeholder="JCR 연도 (비우면 자동)" style="max-width:170px" aria-label="JCR 연도"><button class="btn" data-act="jcrup">올리기</button>
+      </div>
+    <div class="export"><span class="msg">기준 연도 JCR</span><select id="jcr-base" style="width:auto" aria-label="기준 연도 JCR"><option value="">선택</option>${S.data.jcrYears.slice().sort().reverse().map(y=>`<option ${String(y)===String(S.data.jcrBase)?'selected':''}>${y}</option>`).join('')}</select>
+      <button class="btn" data-act="jcrfill">논문 IF·JCR 채우기</button></div><p class="msg" id="jcr-msg"></p></div>
   <div class="panel" style="margin-top:18px"><div class="head"><h2 style="font-size:17px">초기 데이터 가져오기</h2></div>
     <p class="msg">seed.json 을 고르면 교수·담당 교수 명단·실적이 저장됩니다. <b>같은 번호의 자료를 덮어쓰니</b> 처음 한 번만 쓰세요.</p>
     <div class="export"><input type="file" id="seed-file" accept=".json,application/json" style="max-width:320px"><button class="btn" data-act="seed">가져오기</button><span class="msg" id="seed-msg"></span></div></div>`;
@@ -825,6 +829,14 @@ const jnorm=s=>String(s||'').toUpperCase().replace(/&/g,'AND').replace(/[^A-Z0-9
 const inorm=s=>String(s||'').toUpperCase().replace(/[^0-9X]/g,'');
 function jbucket(k){let h=0;for(const ch of k)h=(h*31+ch.charCodeAt(0))>>>0;return h%32}
 async function jcrDoc(id){if(!(id in S.jcrCache)){const d=await db.doc('jcr/'+id).get();S.jcrCache[id]=d.exists?(d.data().e||{}):{}}return S.jcrCache[id]}
+// 출판 당시 JCR 연도: JCR은 매년 6월 말에 전년도 값이 나오므로 7월 이후 출판은 전년도, 1–6월은 전전년도. 월이 없으면 전년도.
+function pubJcrYear(ym){const m=String(ym||'').match(/(\d{4})(?:\D+(\d{1,2}))?/);if(!m)return 0;const y=+m[1],mo=+m[2]||0;return mo&&mo<7?y-2:y-1}
+async function jcrExact(issns,name,year){
+  const keys=[...(issns||[]).map(x=>'I'+inorm(x)).filter(k=>k.length===9),...(name?['N'+jnorm(name)]:[])];
+  if(!year||!keys.length||!S.data.jcrYears.map(Number).includes(+year)) return null;
+  for(const k of keys){const e=(await jcrDoc(year+'_'+jbucket(k)))[k];if(e)return {if:e[0],pct:e[1],year:+year}}
+  return null;
+}
 async function jcrLookup(issns,name,year){
   const keys=[...(issns||[]).map(x=>'I'+inorm(x)).filter(k=>k.length===9),...(name?['N'+jnorm(name)]:[])];
   const ys=S.data.jcrYears.map(Number).sort((a,b)=>b-a); if(!keys.length||!ys.length) return null;
@@ -832,62 +844,84 @@ async function jcrLookup(issns,name,year){
   for(const y of order) for(const k of keys){const e=(await jcrDoc(y+'_'+jbucket(k)))[k];if(e)return {if:e[0],pct:e[1],year:y}}
   return null;
 }
-function jcrParse(rows,yearIn){
-  let h=-1;for(let r=0;r<Math.min(rows.length,15);r++){if((rows[r]||[]).some(c=>/issn|journal|저널|학술지/i.test(String(c))))  {h=r;break}}
+function jcrParse(rows,yearIn,fname){
+  let h=-1;for(let r=0;r<Math.min(rows.length,20);r++){const R=(rows[r]||[]).map(c=>String(c).trim());if(R.filter(Boolean).length>=3&&R.some(c=>/issn|journal|저널|학술지/i.test(c))){h=r;break}}
   if(h<0) throw new Error('머리글(저널명·ISSN) 행을 찾지 못했어요');
   const H=rows[h].map(c=>String(c||'').trim()), find=(re,no)=>H.findIndex(c=>re.test(c)&&!(no&&no.test(c)));
   const col={name:find(/journal name|full journal title|journal title|저널명|학술지명|^journal$|^title$|저널|학술지/i,/abbr|약어|issn/i),
     issn:find(/issn/i,/e-?issn|eissn|전자/i), eissn:find(/e-?issn|eissn|전자/i),
-    jif:find(/jif|impact factor|^if$|영향력|피인용지수/i,/5[- ]?y|5년|five|without|jci|quartile|percentile|rank|순위|백분위|분위/i),
-    pct:find(/상위|top\s*%/i), rank:find(/rank|순위/i,/quartile|분위|percentile/i), perc:find(/percentile|백분위/i)};
+    jif:find(/jif|impact factor|^if\b|영향력|피인용지수/i,/5[- ]?y|5년|five|without|jci|quartile|percentile|rank|순위|백분위|분위/i),
+    pct:find(/상위|top\s*%/i), rank:find(/rank|순위/i,/quartile|분위|percentile/i), perc:find(/percentile|백분위/i),
+    cat:find(/^category$|^분야$|카테고리/i), year:find(/^year$|^연도$|jcr\s*year|jcr\s*연도|게재연도/i)};
   if(col.jif<0) throw new Error('IF 열을 찾지 못했어요');
-  const year=Number(yearIn)||Number((H[col.jif].match(/(20\d\d)/)||[])[1]); if(!year) throw new Error('JCR 연도를 적어 주세요');
-  const out={}, num=v=>{const n=parseFloat(String(v).replace(/[^0-9.]/g,''));return isNaN(n)?null:n};
+  const meta=rows.slice(0,h).map(r=>(r||[]).join(' ')).join(' ');
+  const year0=Number(yearIn)||Number((H[col.jif].match(/(20\d\d)/)||[])[1])||Number((meta.match(/JCR Year:\s*(20\d\d)/i)||[])[1])||Number((String(fname||'').match(/(20\d\d)/)||[])[1]);
+  if(!year0&&col.year<0) throw new Error('JCR 연도를 적어 주세요');
+  const num=v=>{const n=parseFloat(String(v).replace(/[^0-9.]/g,''));return isNaN(n)?null:n};
+  const recs=[];
   for(const r of rows.slice(h+1)){ if(!r) continue;
     const jif=num(r[col.jif]); if(jif===null) continue;
+    const y=col.year>=0?(Number(String(r[col.year]).match(/(20\d\d)/)?.[1])||year0):year0; if(!y) continue;
     let pct=null;
     if(col.pct>=0) pct=num(r[col.pct]);
     if(pct===null&&col.rank>=0){const m=String(r[col.rank]||'').match(/(\d+)\s*\/\s*(\d+)/);if(m)pct=+m[1]/+m[2]*100}
     if(pct===null&&col.perc>=0){const p=num(r[col.perc]);if(p!==null)pct=100-p}
-    pct=pct===null?null:Math.round(pct*100)/100;
-    const ks=[col.issn>=0&&'I'+inorm(r[col.issn]),col.eissn>=0&&'I'+inorm(r[col.eissn]),col.name>=0&&'N'+jnorm(r[col.name])].filter(k=>k&&k.length>2&&!(k[0]==='I'&&k.length!==9));
-    ks.forEach(k=>{const o=out[k];if(!o)out[k]=[jif,pct];else if(pct!==null&&(o[1]===null||pct<o[1]))out[k]=[jif,pct]});
+    recs.push({y,jif,pct,cat:col.cat>=0?String(r[col.cat]).trim():'',name:col.name>=0?r[col.name]:'',issn:col.issn>=0?r[col.issn]:'',eissn:col.eissn>=0?r[col.eissn]:''});
   }
-  return {year,out,col:Object.fromEntries(Object.entries(col).map(([k,v])=>[k,v>=0?H[v]:'—']))};
+  // 순위·백분위 열이 없고 분야 열이 있으면, 파일 안 분야별 IF 순위로 상위 %를 계산한다.
+  // JCR 화면 내보내기는 600개 저널에서 잘리므로, 600개 이상이면 분야 목록이 완전하지 않다고 보고 계산하지 않는다.
+  const uniq=new Set(recs.map(x=>jnorm(x.name))).size;
+  let mode=col.pct>=0||col.rank>=0||col.perc>=0?'file':'none';
+  if(mode==='none'&&col.cat>=0&&uniq<600){mode='calc';
+    const g={};recs.forEach(x=>{const k=x.y+'|'+x.cat;(g[k]=g[k]||[]).push(x)});
+    Object.values(g).forEach(L=>{L.sort((a,b)=>b.jif-a.jif);L.forEach(x=>{const rank=L.findIndex(z=>z.jif===x.jif)+1;x.pct=rank/L.length*100})});}
+  const byYear={};
+  recs.forEach(x=>{const out=byYear[x.y]=byYear[x.y]||{}, pct=x.pct===null?null:Math.round(x.pct*100)/100;
+    ['I'+inorm(x.issn),'I'+inorm(x.eissn),'N'+jnorm(x.name)].filter(k=>k.length>2&&!(k[0]==='I'&&k.length!==9)).forEach(k=>{const o=out[k];if(!o)out[k]=[x.jif,pct];else if(pct!==null&&(o[1]===null||pct<o[1]))out[k]=[x.jif,pct]})});
+  return {byYear,mode,uniq,col:Object.fromEntries(Object.entries(col).map(([k,v])=>[k,v>=0?H[v]:'—']))};
 }
 async function jcrUpload(){
-  const f=$('#jcr-file').files[0], msg=$('#jcr-msg'); if(!f){msg.textContent='파일을 먼저 고르세요.';return}
+  const files=[...$('#jcr-file').files], msg=$('#jcr-msg'); if(!files.length){msg.textContent='파일을 먼저 고르세요.';return}
   try{
-    msg.textContent='읽는 중…';
-    const wb=XLSX.read(await f.arrayBuffer(),{type:'array'}); const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''});
-    const {year,out,col}=jcrParse(rows,$('#jcr-year').value.trim()); const n=Object.keys(out).filter(k=>k[0]==='N').length;
-    if(!confirm(`${year}년 JCR · 저널 ${n}개\n열 인식 — 저널명: ${col.name} / ISSN: ${col.issn} / eISSN: ${col.eissn} / IF: ${col.jif} / 상위%: ${col.pct} / 순위: ${col.rank} / 백분위: ${col.perc}\n저장할까요?`)){msg.textContent='';return}
-    msg.textContent='저장 중…';
-    const bk={};Object.entries(out).forEach(([k,v])=>{(bk[jbucket(k)]=bk[jbucket(k)]||{})[k]=v});
-    const ids=Object.keys(bk), b=db.batch();
-    for(const i of ids){const id=year+'_'+i;delete S.jcrCache[id];const cur=await jcrDoc(id);const m=Object.assign({},cur);
-      Object.entries(bk[i]).forEach(([k,v])=>{const o=m[k];if(!o||(v[1]!==null&&(o[1]===null||v[1]<o[1])))m[k]=v});
-      b.set(db.doc('jcr/'+id),{e:m});S.jcrCache[id]=m}
-    const ys=Array.from(new Set([...S.data.jcrYears.map(String),String(year)]));
-    b.set(db.doc('config/app'),{jcrYears:ys},{merge:true}); await b.commit(); S.data.jcrYears=ys;
-    render(); $('#jcr-msg').textContent=`${year}년 저널 ${n}개를 저장했어요.`;
+    const all={}, notes=[];
+    for(const f of files){msg.textContent='읽는 중… '+f.name;
+      const wb=XLSX.read(await f.arrayBuffer(),{type:'array'}); const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''});
+      const r=jcrParse(rows,$('#jcr-year').value.trim(),f.name);
+      Object.entries(r.byYear).forEach(([y,out])=>{const A=all[y]=all[y]||{};Object.entries(out).forEach(([k,v])=>{const o=A[k];if(!o||(v[1]!==null&&(o[1]===null||v[1]<o[1])))A[k]=v})});
+      notes.push(`${f.name}: 저널 ${r.uniq}개 · 상위% ${r.mode==='file'?'파일 값':r.mode==='calc'?'분야별 순위로 계산':'없음'+(r.uniq>=600?' (600개에서 잘린 목록이라 계산 안 함)':'')}`);
+    }
+    const ys=Object.keys(all).sort(), n=ys.map(y=>`${y}년 ${Object.keys(all[y]).filter(k=>k[0]==='N').length}개`).join(', ');
+    if(!confirm(`${n}\n\n${notes.slice(0,12).join('\n')}${notes.length>12?`\n… 외 ${notes.length-12}개 파일`:''}\n\n저장할까요?`)){msg.textContent='';return}
+    for(const year of ys){msg.textContent=`저장 중… ${year}년`;
+      const bk={};Object.entries(all[year]).forEach(([k,v])=>{(bk[jbucket(k)]=bk[jbucket(k)]||{})[k]=v});
+      const b=db.batch();
+      for(const i of Object.keys(bk)){const id=year+'_'+i;delete S.jcrCache[id];const cur=await jcrDoc(id);const m=Object.assign({},cur);
+        Object.entries(bk[i]).forEach(([k,v])=>{const o=m[k];if(!o||(v[1]!==null&&(o[1]===null||v[1]<o[1]))||(o[1]===null&&v[1]===null))m[k]=v});
+        b.set(db.doc('jcr/'+id),{e:m});S.jcrCache[id]=m}
+      await b.commit();
+    }
+    const yall=Array.from(new Set([...S.data.jcrYears.map(String),...ys]));
+    await db.doc('config/app').set({jcrYears:yall},{merge:true}); S.data.jcrYears=yall;
+    render(); $('#jcr-msg').textContent=`저장했어요: ${n}`;
   }catch(e){console.error(e);msg.textContent='올리지 못했어요: '+(e.message||e)}
 }
 async function jcrFill(){
   const msg=$('#jcr-msg'); if(!S.data.jcrYears.length){msg.textContent='먼저 JCR 자료를 올려 주세요.';return}
-  const todo=S.data.items.filter(i=>i.cat==='paper'&&i.f.journal&&(!i.f.if||!i.f.jcr));
-  msg.textContent=`찾는 중… 0 / ${todo.length}`; const ups=[]; let k=0;
-  const latest=Math.max(...S.data.jcrYears.map(Number));
-  for(const i of todo){const py=Number(String(i.f.ym||'').slice(0,4));k++;if(k%20===0)msg.textContent=`찾는 중… ${k} / ${todo.length}`;
-    const f=Object.assign({},i.f), mm=String(i.memo||'').match(/IF\s*([\d.]+)/i); if(!f.if&&mm) f.if=mm[1];
-    const r=await jcrLookup([],i.f.journal,py);
-    // 게재연도 JCR만 쓴다. 게재연도 JCR이 아직 없으면(최신 연도보다 뒤) 최신 JCR.
-    if(r&&(r.year===py||(py>latest&&r.year===latest))){if(!f.if&&r.if!=null)f.if=String(r.if); if(!f.jcr&&r.pct!=null)f.jcr=String(r.pct)}
-    if(f.if!==i.f.if||f.jcr!==i.f.jcr) ups.push([i,f])}
-  if(!ups.length){msg.textContent=`채울 수 있는 논문이 없어요 (빈 칸 ${todo.length}건 — 저널이나 게재연도 JCR 자료가 없음).`;return}
-  if(!confirm(`논문 ${ups.length}건의 빈 IF·JCR 칸을 채울까요? (이미 적힌 값은 그대로)`)){msg.textContent='';return}
+  const base=Number(S.data.jcrBase)||0;
+  const todo=S.data.items.filter(i=>i.cat==='paper'&&i.f.journal);
+  msg.textContent=`찾는 중… 0 / ${todo.length}`; const ups=[]; let k=0, nPub=0, nCur=0, nMemo=0;
+  for(const i of todo){k++;if(k%20===0)msg.textContent=`찾는 중… ${k} / ${todo.length}`;
+    const f=Object.assign({},i.f);
+    if(!f.if||!f.jcr){const r=await jcrExact([],f.journal,pubJcrYear(f.ym));
+      if(r){if(!f.if&&r.if!=null)f.if=String(r.if);if(!f.jcr&&r.pct!=null)f.jcr=String(r.pct);nPub++}
+      else{const mm=String(i.memo||'').match(/IF\s*([\d.]+)/i);if(!f.if&&mm){f.if=mm[1];nMemo++}}}
+    if(base){const r=await jcrExact([],f.journal,base);const nv=r?[r.if!=null?String(r.if):'',r.pct!=null?String(r.pct):'']:['',''];
+      if(nv[0]!==(f.if_cur||'')||nv[1]!==(f.jcr_cur||'')){f.if_cur=nv[0];f.jcr_cur=nv[1]}if(r)nCur++}
+    if(JSON.stringify(f)!==JSON.stringify(i.f)) ups.push([i,f])}
+  if(!ups.length){msg.textContent='바뀌는 논문이 없어요.';return}
+  if(!confirm(`논문 ${ups.length}건을 고칠까요?\n· 출판 당시 IF·상위 %: 빈 칸만 채움 (JCR ${nPub}건, 1차조사 메모 IF ${nMemo}건)\n· 기준 연도${base?' '+base:''} IF·상위 %: ${base?`전부 다시 계산 (찾음 ${nCur}건)`:'기준 연도가 정해지지 않아 건너뜀'}`)){msg.textContent='';return}
   try{for(let a=0;a<ups.length;a+=400){const b=db.batch();ups.slice(a,a+400).forEach(([i,f])=>b.update(db.doc('items/'+i.id),{f}));await b.commit()}
-    ups.forEach(([i,f])=>i.f=f); msg.textContent=`${ups.length}건 채웠어요. 나머지 ${todo.length-ups.length}건은 저널이나 게재연도 JCR 자료가 없어 비워 뒀어요.`}catch(e){fail(e)}
+    ups.forEach(([i,f])=>i.f=f); msg.textContent=`${ups.length}건 고쳤어요.`}catch(e){fail(e)}
 }
 
 /* ===== 쓰기 ===== */
@@ -956,6 +990,7 @@ document.addEventListener('change',async e=>{
   const t=e.target;
   if(t.id==='me-rev'){S.me.rev=t.value||null;S.open=null;await refresh();return}
   if(t.id==='flt'){S.filterFix=t.checked;render();return}
+  if(t.id==='jcr-base'){try{await db.doc('config/app').set({jcrBase:t.value},{merge:true});S.data.jcrBase=t.value;toast(t.value?`기준 연도를 ${t.value} JCR로 정했어요. "논문 IF·JCR 채우기"를 누르면 반영돼요`:'기준 연도를 지웠어요',4000)}catch(er){fail(er)}return}
   if(t.id==='filepick'){const f=t.files[0];if(f&&S.attachFor)await uploadFile(S.attachFor,f);return}
   if(t.id==='rg-from'||t.id==='rg-to'){S.range[t.id==='rg-from'?'from':'to']=t.value;S.tsv='';return}
   if(t.id==='top-pick'){const i=S.data.items.find(x=>x.id===t.value);if(!i)return;const f=i.f,el=t.closest('form').elements;
@@ -1004,9 +1039,10 @@ async function doiFill(){
     inp.value=doi;set('title',(m.title||[])[0]);set('journal',(m['container-title']||[])[0]);set('ym',dp[0]?dp[0]+'.'+String(dp[1]||1).padStart(2,'0'):'');
     set('vol',m.volume?(m.volume+(m.issue?'('+m.issue+')':'')):'');set('pages',m.page||m['article-number']||'');set('nauth',m.author?String(m.author.length):'');
     let extra='';
-    try{const j=await jcrLookup(m.ISSN||[],(m['container-title']||[])[0],dp[0]);
-      if(j){if(j.if!=null)set('if',String(j.if));if(j.pct!=null)set('jcr',String(j.pct));extra=` IF·JCR은 ${j.year} JCR 기준이에요${String(j.year)!==String(dp[0])?' (게재연도 자료가 없어 가까운 연도)':''}.`}
-      else if(S.data.jcrYears.length) extra=' 이 저널은 JCR 자료에 없어 IF를 직접 넣어 주세요.';}catch(_){}
+    try{const ym=dp[0]?dp[0]+'.'+(dp[1]||''):'', py=pubJcrYear(ym), base=Number(S.data.jcrBase)||0, iss=m.ISSN||[], jn=(m['container-title']||[])[0];
+      const j=await jcrExact(iss,jn,py), c=base?await jcrExact(iss,jn,base):null;
+      set('if',j&&j.if!=null?String(j.if):'');set('jcr',j&&j.pct!=null?String(j.pct):'');set('if_cur',c&&c.if!=null?String(c.if):'');set('jcr_cur',c&&c.pct!=null?String(c.pct):'');
+      if(S.data.jcrYears.length) extra=(j?` 출판 당시 = ${py} JCR.`:` ${py} JCR에 이 저널이 없어 출판 당시 IF는 직접 넣어 주세요.`)+(base?(c?` 기준 = ${base} JCR.`:''):'');}catch(_){}
     msg.textContent='채웠어요. 저자 역할을 골라 주세요.'+extra;
   }catch(_){msg.textContent='자동 조회가 안 됐어요. DOI를 확인하거나 직접 입력해 주세요.';msg.className='help msg err'}
 }
