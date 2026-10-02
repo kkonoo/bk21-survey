@@ -317,18 +317,77 @@ const CATS = [
 const CAT = Object.fromEntries(CATS.map(c=>[c.key,c]));
 /* 작성 예시 (가상의 자료) */
 const EX = {
-  paper:{doi:'10.1038/s41467-024-00000-0',title:'Single-cell atlas of the aging mouse hippocampus reveals microglial states linked to memory decline',journal:'NATURE COMMUNICATIONS',ym:'2024.05',vol:'15(1)',pages:'4321',if:'14.7',jcr:'8.5',role:'교신저자',nauth:'12',nmain:'2',student:'홍길동',intl:'예',partner:'John Smith',pinst:'미국 / Stanford University',rep:'예',merit:'노화 해마의 미세아교세포 상태를 단일세포 수준에서 처음 규명하여 ...'},
-  grant:{title:'노화 뇌의 단일세포 전사체 지도 구축',ministry:'과학기술정보통신부 / 한국연구재단',program:'중견연구자지원사업',gtype:'정부 (지자체 포함)',grole:'연구책임자',knu:'예',start:'2023-03-01',end:'2028-02-29',total:'750000',rep:'예',paid:{2023:'150000',2024:'150000',2025:'150000'}},
-  ip:{kind:'등록특허',date:'2024-08-20',title:'알츠하이머병 진단용 바이오마커 조성물 및 이를 이용한 진단 방법',country:'한국',number:'10-2700000',holder:'경북대학교 산학협력단',inventors:'홍길동, 김철수',intl:'아니오'},
-  top:{ttype:'논문',year:'2022',output:'Hong GD et al. Cell. 2022;185(3):400-415. DOI 10.1016/j.cell.2022.00.000',desc:'세계 최초로 ... 를 규명하여 인용 300회 이상, 후속 연구의 표준 자료로 쓰임'},
-  edu:{kind:'대학원 교육용 저서·book chapter',title:'의생명 빅데이터 분석 입문 (공저, 대학원 교재)',year:'2024',merit:'의과학과 대학원 필수 과목 교재로 채택되어 ...'},
-  lec:{term:'2025-2',dept:'의과학과 대학원',course:'단일세포 유전체학 특론',eng:'예',share:'100'},
-  soc:{title:'대구시 바이오헬스 산업 육성 자문위원',fields:['정책 기여','기업현안 해결'],date:'2024.03 ~ 현재',summary:'지역 바이오 기업 기술 자문 5건, 시 정책 보고서 공동 집필'},
-  intl:{kind:'초청강연',date:'2025.05',event:'Keystone Symposia: Neuroinflammation',place:'미국 Breckenridge',content:'Spatial transcriptomics of microglia (초청 연자)'},
-  collab:{output:'미국 NIH와 공동과제 "Brain aging atlas" 공동 수행 (MOU 체결)',partner:'Jane Doe',inst:'미국 / NIH',year:'2024'},
-  ex:{kind:'해외 기관 연수',inst:'일본 RIKEN / Dr. Tanaka',period:'2025.08.11 ~ 08.22',topic:'공간전사체 분석 기법 연수',proof:'예'},
-  roster:{name:'홍길동',sid:'2021xxxxxx',degree:'박사',status:'졸업',bk:'아니오',admit:'2021.03',grad:'2025.08',foreign:'아니오',ckind:'취업',career:'한국뇌연구원 박사후연구원'},
-  stu:{student:'홍길동',kind:'학회 발표 (국제)',date:'2025.10',title:'Society for Neuroscience 2025 포스터 발표 "Microglial aging ..."'},
+  paper:[
+    {doi:'10.1038/s41467-024-00000-0',title:'Single-cell atlas of the aging mouse hippocampus reveals microglial states linked to memory decline',journal:'NATURE COMMUNICATIONS',ym:'2024.05',vol:'15(1)',pages:'4321',if:'14.7',jcr:'8.5',role:'교신저자',nauth:'12',nmain:'2',student:'홍길동',intl:'예',partner:'John Smith',pinst:'미국 / Stanford University',rep:'예',merit:'노화 해마의 미세아교세포 상태를 단일세포 수준에서 처음 규명하여 ...'},
+    {doi:'10.3390/ijms25000000',title:'Effect of compound X on hepatic lipid metabolism in high-fat diet mice',journal:'INTERNATIONAL JOURNAL OF MOLECULAR SCIENCES',ym:'2023.11',vol:'24(22)',pages:'16001',if:'4.9',jcr:'25.0',role:'제1저자',nauth:'6',nmain:'2',intl:'아니오'},
+    {doi:'10.1016/j.example.2022.000000',title:'Multicenter cohort study of biomarker Y in chronic kidney disease',journal:'KIDNEY INTERNATIONAL',ym:'2022.03',vol:'101(3)',pages:'500-512',if:'19.6',jcr:'1.2',role:'기타저자',nauth:'25',nmain:'3',intl:'아니오'},
+  ],
+  grant:[
+    {title:'노화 뇌의 단일세포 전사체 지도 구축',ministry:'과학기술정보통신부 / 한국연구재단',program:'중견연구자지원사업',gtype:'정부 (지자체 포함)',grole:'연구책임자',knu:'예',start:'2023-03-01',end:'2028-02-29',total:'750000',rep:'예',paid:{2023:'150000',2024:'150000',2025:'150000'}},
+    {title:'신규 항염증 후보물질 효능 평가',ministry:'(주)OO바이오',program:'산학협력 연구용역',gtype:'산업체 (국내)',grole:'연구책임자',knu:'예',start:'2024-07-01',end:'2025-06-30',total:'60000',paid:{2024:'30000',2025:'30000'}},
+    {title:'대사질환 정밀의료 플랫폼 개발 (세부 2: 오믹스 분석)',ministry:'보건복지부 / 한국보건산업진흥원',program:'보건의료기술연구개발사업',gtype:'정부 (지자체 포함)',grole:'공동연구원',knu:'아니오',share:'20',start:'2022-04-01',end:'2026-12-31',total:'2000000'},
+    {title:'International consortium on brain aging',ministry:'NIH (미국)',program:'R01 하위과제',gtype:'해외기관',grole:'세부(위탁)과제 책임자',knu:'예',start:'2025-01-01',end:'2027-12-31',total:'120000',paid:{2025:'40000'}},
+  ],
+  ip:[
+    {kind:'등록특허',date:'2024-08-20',title:'알츠하이머병 진단용 바이오마커 조성물 및 이를 이용한 진단 방법',country:'한국',number:'10-2700000',holder:'경북대학교 산학협력단',inventors:'홍길동, 김철수',intl:'아니오',rep:'예',merit:'혈액 바이오마커로 조기 진단 정확도 90% 이상 ...'},
+    {kind:'기술이전',date:'2025-02-10',title:'항염증 펩타이드 제조 기술',holder:'경북대학교 산학협력단',inventors:'홍길동',amount:'50000',intl:'아니오'},
+    {kind:'창업',date:'2023-09-01',title:'(주)OO진단 — 교원창업 (대표 홍길동, 연구소기업)',country:'한국',number:'사업자 123-45-67890',intl:'아니오'},
+    {kind:'저서',date:'2022-03-15',title:'Single-Cell Genomics in Neuroscience (Springer, Chapter 7 집필)',country:'독일',number:'ISBN 978-3-000-00000-0',inventors:'Hong GD, Smith J',intl:'예',partner:'John Smith',pinst:'미국 / Stanford University'},
+  ],
+  top:[
+    {ttype:'논문',year:'2022',output:'Hong GD et al. Cell. 2022;185(3):400-415. DOI 10.1016/j.cell.2022.00.000',desc:'세계 최초로 ... 를 규명하여 인용 300회 이상, 후속 연구의 표준 자료로 쓰임'},
+    {ttype:'특허',year:'2020',output:'등록특허 10-2000000 "OO 치료용 조성물" (경북대학교 산학협력단)',desc:'기술이전(3억 원) 후 임상 1상 진입'},
+  ],
+  edu:[
+    {kind:'대학원 교육용 저서·book chapter',title:'의생명 빅데이터 분석 입문 (공저, 대학원 교재)',year:'2024',merit:'의과학과 대학원 필수 과목 교재로 채택되어 ...'},
+    {kind:'번역서',title:'「분자세포생물학」 9판 번역 (공역, 3장 담당)',year:'2023',merit:'대학원 기초 과목 교재로 사용'},
+    {kind:'교육 관련 논문',title:'Flipped learning in graduate bioinformatics course (Korean J Med Educ, 2025)',year:'2025',merit:'대학원 강의 개선 효과를 정량 분석'},
+    {kind:'교육 수상 (교외)',title:'한국의학교육학회 우수교육자상',year:'2024',merit:'교외 학회 수상 (교내 수상은 제외)'},
+    {kind:'MOOC·KMOOC·OCW·PBL',title:'K-MOOC "생명정보학 실습" 개발·운영',year:'2023',merit:'수강생 1,200명, 대학원 선수 과목으로 활용'},
+    {kind:'신규 교과목 개발·개설',title:'대학원 "공간전사체 분석 실습" 신설',year:'2025',merit:'실습 중심 교과로 학생 연구 역량 강화'},
+  ],
+  lec:[
+    {term:'2025-2',dept:'의과학과 대학원',course:'단일세포 유전체학 특론',eng:'예',share:'100'},
+    {term:'2024-1',dept:'타 학과 대학원',course:'생명과학과 대학원 「분자약리학」',eng:'아니오',share:'50'},
+  ],
+  soc:[
+    {title:'대구시 바이오헬스 산업 육성 자문위원',fields:['정책 기여','거버넌스 구축'],date:'2024.03 ~ 현재',summary:'시 정책 보고서 공동 집필, 산업 육성 계획 자문'},
+    {title:'지역 바이오 기업 기술 자문',fields:['기업현안 해결'],date:'2023.05 ~ 2024.12',summary:'(주)OO바이오 등 3개사 분석 기술 문제 해결 지원'},
+    {title:'의료기관 연구원 대상 데이터 분석 재교육',fields:['인력 재교육','미래/글로벌 대응'],date:'2025.07',summary:'병원 연구 인력 40명 대상 AI·오믹스 분석 교육 운영'},
+  ],
+  intl:[
+    {kind:'국제학회 수상',date:'2024.11',event:'Society for Neuroscience 2024',place:'미국 Chicago',content:'Young Investigator Award'},
+    {kind:'초청강연',date:'2025.05',event:'Keystone Symposia: Neuroinflammation',place:'미국 Breckenridge',content:'Spatial transcriptomics of microglia (초청 연자)'},
+    {kind:'기조연설',date:'2023.10',event:'Asian Pacific Society for Neurochemistry',place:'일본 Tokyo',content:'Keynote: Brain aging at single-cell resolution'},
+    {kind:'좌장',date:'2024.06',event:'FAOPS 2024',place:'인도 New Delhi',content:'Session 5 좌장'},
+    {kind:'위원회',date:'2022.01 ~ 현재',event:'International Society for ○○',content:'Program Committee 위원'},
+    {kind:'국제학술지 편집위원',date:'2023.03 ~ 현재',event:'Frontiers in Neuroscience (SCIE)',content:'Associate Editor'},
+    {kind:'국제 저술',date:'2022.03',event:'Springer — Single-Cell Genomics in Neuroscience',content:'Chapter 7 단독 집필'},
+  ],
+  collab:[
+    {output:'미국 NIH와 공동과제 "Brain aging atlas" 공동 수행 (MOU 체결)',partner:'Jane Doe',inst:'미국 / NIH',year:'2024'},
+    {output:'독일 막스플랑크연구소와 연구 인력 교류·공동 데이터 분석',partner:'Hans Müller',inst:'독일 / Max Planck Institute',year:'2023'},
+  ],
+  ex:[
+    {kind:'해외 기관 연수',inst:'일본 RIKEN / Dr. Tanaka',period:'2025.08.11 ~ 08.22',topic:'공간전사체 분석 기법 연수',proof:'예'},
+    {kind:'외국 연구자 국내 방문 (온라인 포함)',inst:'미국 Stanford University / Dr. John Smith',period:'2024.10.15',topic:'공동연구 논의 및 대학원생 세미나 (온라인)',proof:'예'},
+  ],
+  roster:[
+    {name:'홍길동',sid:'2021xxxxxx',degree:'박사',status:'졸업',bk:'아니오',admit:'2021.03',grad:'2025.08',foreign:'아니오',ckind:'취업',career:'한국뇌연구원 박사후연구원'},
+    {name:'김철수',sid:'2024xxxxxx',degree:'석사',status:'재학',bk:'예',admit:'2024.03',foreign:'아니오'},
+    {name:'Nguyen Van A',sid:'2023xxxxxx',degree:'석박통합',status:'재학',bk:'예',admit:'2023.09',foreign:'예'},
+    {name:'이영희',sid:'2022xxxxxx',degree:'석사',status:'수료',bk:'예',admit:'2022.03',foreign:'아니오'},
+    {name:'박민수',degree:'박사후연구원',status:'계약 중',bk:'예',admit:'2025.03',foreign:'아니오'},
+    {name:'최지은',sid:'2022xxxxxx',degree:'학부연구생',status:'학부 재학',bk:'아니오',admit:'2025.01',foreign:'아니오'},
+    {name:'정하늘',sid:'2023xxxxxx',degree:'학·석 연계과정',status:'학부 재학',bk:'아니오',admit:'2025.03',foreign:'아니오'},
+  ],
+  stu:[
+    {student:'김철수',kind:'학회 발표 (국제)',date:'2025.10',title:'Society for Neuroscience 2025 포스터 발표 "Microglial aging ..."'},
+    {student:'김철수',kind:'학회 발표 (국내)',date:'2025.05',title:'대한생리학회 춘계학술대회 구연 발표'},
+    {student:'Nguyen Van A',kind:'특허·기술이전·창업',date:'2025.02',title:'등록특허 10-2700000 공동발명자'},
+    {student:'이영희',kind:'수상',date:'2024.11',title:'한국분자세포생물학회 우수 포스터상'},
+    {student:'홍길동',kind:'해외 연구실 공동연구 (15일 이상)',date:'2024.07 ~ 2024.08',title:'미국 Stanford University Smith Lab 6주 파견 공동연구'},
+  ],
 };
 /* 날짜 기준 (정렬·기간 취합) */
 const DKEY={paper:'ym',grant:'start',ip:'date',top:'year',edu:'year',lec:'term',soc:'date',intl:'date',collab:'year',ex:'period',roster:'admit',stu:'date'};
@@ -502,7 +561,7 @@ function catPanel(p,c,mode){
         ${canEdit&&!editingNew?`<button class="btn primary" data-act="add">+ 추가</button>`:''}
       </div></div>
     <div class="rule">${c.rule}</div>
-    ${EX[c.key]&&mode!=='rev'?`<details class="ex" ${it.length?'':'open'}><summary>작성 예시 보기</summary>${exHTML(c)}</details>`:''}
+    ${EX[c.key]&&mode!=='rev'?`<details class="ex" ${it.length?'':'open'}><summary>작성 예시 보기 (${EX[c.key].length}가지)</summary>${exHTML(c)}</details>`:''}
     ${c.key==='collab'?(()=>{const A=intlAuto(p.id);return `<div class="items" style="margin-bottom:12px">${A.length?A.map(a=>`<div class="item"><div><div class="t">${esc(a.output)}</div><div class="meta">${[a.src+'에서 자동',a.partner||'국외 공동연구자 미입력',a.inst||'기관 미입력',a.year].filter(Boolean).map(x=>`<span>${esc(x)}</span>`).join('')}</div></div></div>`).join(''):'<div class="empty">논문·특허 탭에서 국제 = 예로 표시된 항목이 아직 없어요.</div>'}</div>`})():''}
     ${editingNew?formHTML(c,{}):''}
     <div class="items">${it.length?it.map(i=>S.editing===i.id?formHTML(c,i.f,i.id):itemHTML(i,c,mode)).join(''):`<div class="empty">아직 입력된 ${c.name} 실적이 없습니다.${canEdit?' <b>+ 추가</b>로 넣어 주세요.':''}</div>`}</div>
@@ -512,11 +571,11 @@ function catPanel(p,c,mode){
     </div></div>`;
 }
 
-function exHTML(c){const f=EX[c.key];
+function exHTML(c){return EX[c.key].map(f=>{
   const meta=c.meta(f).filter(Boolean).map(m=>`<span>${esc(m)}</span>`).join('');
   const chips=(c.chips(f)||[]).filter(x=>x&&x[0]!=='fix');
   return `<div class="item ex"><div style="min-width:0"><div class="t">${esc(c.title(f))}</div><div class="meta">${meta}</div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"><span class="chip rep">예시 · 가상 자료</span>${chips.map(x=>`<span class="chip ${x[0]}">${esc(x[1])}</span>`).join('')}</div></div></div>`}
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"><span class="chip rep">예시 · 가상 자료</span>${chips.map(x=>`<span class="chip ${x[0]}">${esc(x[1])}</span>`).join('')}</div></div></div>`}).join('')}
 function itemHTML(i,c,mode){
   const chips=(c.chips(i.f)||[]).filter(Boolean);
   if(i.pre) chips.unshift(['pre','1차조사']);
