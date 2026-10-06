@@ -574,7 +574,7 @@ function promoFrom(pid){if(pid in S.promoFrom)return S.promoFrom[pid];try{return
 function promoPanel(p){
   const target=PROMO_NEXT[p.rank], crit=promoCrit(p.type,target), from=promoFrom(p.id), fYM=ymOf(from);
   const head=`<div class="head"><h2 style="font-size:17px">승진 실적 달성도 · ${esc(p.type)} · ${esc(p.rank)} → ${target}</h2></div>
-    <p class="msg">교수님 본인과 BK 사무국만 보는 참고용 화면입니다 (담당 교수 화면에는 나오지 않아요). 이 조사에 입력한 <b>2021년 이후 논문</b>만으로 계산하므로, 실제 승진 심사는 교무 규정과 통합정보시스템 기준으로 다시 확인해 주세요.</p>
+    <p class="msg">교수님 본인 참고용 화면입니다 (담당 교수 화면에는 나오지 않아요). 이 조사에 입력한 <b>2021년 이후 논문</b>만으로 계산하므로, 실제 승진 심사는 교무 규정과 통합정보시스템 기준으로 다시 확인해 주세요.</p>
     <p style="margin:12px 0 0"><label for="promo-from" class="msg">산정 시작 연월 </label><input type="month" id="promo-from" value="${esc(from)}" style="max-width:170px">
     <span class="msg">현 직급 임용 이후 논문만 세려면 넣어 주세요. 이 브라우저에만 저장돼요.</span></p>`;
   if(!crit) return `<div class="panel promo">${head}<p class="msg" style="margin-top:14px">이 계열은 국내논문이 포함된 기준이라 자동 계산하지 않습니다.</p></div>`;
