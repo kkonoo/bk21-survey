@@ -197,7 +197,7 @@ const FIELD_OPTS = {
 };
 const YEARS = Array.from({length:Math.max(2026,new Date().getFullYear())-2020},(_,k)=>String(2021+k));
 const CATS = [
-  {key:'roster', name:'지도학생 및 연구원 명단', table:'첨부 2·3·4 · 2-2', rule:'<b>논문보다 먼저 입력해 주세요</b> — 논문 탭의 지도학생 주저자를 이 명단에서 고릅니다. 26.2 명단으로 미리 채운 것은 <b>재학생뿐</b>이니 <b>졸업생과 박사후연구원</b>부터 추가해 주세요.<br><b>2021년 이후</b> 지도한 학생 전원 (재학·수료·졸업), 박사후연구원, 그리고 연구실의 <b>학부연구생·학석 연계과정생</b> (5단계는 학·석·박 연계를 봅니다). 26.2학기 참여대학원생 명단으로 미리 채웠으니 2021년 이후 졸업생과 학부생을 추가하고 <b>졸업생 진로</b>를 채워 주세요. 학생 수가 장학금 규모와 참여교수 결정의 기준이 됩니다. <b>BK 참여 여부와 관계없이 모두 넣고</b>, 지금 BK 참여 중인지만 따로 표시해 주세요 (26.2 명단에서 온 학생은 \'예\'로 되어 있어요).',
+  {key:'roster', name:'지도학생 및 연구원 명단', table:'첨부 2·3·4 · 2-2', rule:'<b>논문보다 먼저 입력해 주세요</b> — 논문 탭의 지도학생 주저자를 이 명단에서 고릅니다. 4단계 BK 참여학생은 미리 채워 두었으니 <b>졸업생 진로 확인</b>과 <b>박사후연구원·학부연구생 추가</b>부터 해 주세요.<br><b>2021년 이후</b> 지도한 학생 전원 (재학·수료·졸업), 박사후연구원, 그리고 연구실의 <b>학부연구생·학석 연계과정생</b> (5단계는 학·석·박 연계를 봅니다). <b>4단계 BK 참여학생 명단(2020.2–2026.2학기)</b>으로 미리 채웠으니 지금 명단에 없는 학생(졸업생의 <b>졸업 연월·진로</b>, 상태)을 고쳐 주시고, BK에 참여하지 않은 대학원생과 <b>박사후연구원·학부연구생</b>은 <b>+ 추가</b>로 넣어 주세요. 학생 수가 장학금 규모와 참여교수 결정의 기준이 됩니다. <b>BK 참여 여부와 관계없이 모두 넣고</b>, 지금 BK 참여 중인지만 따로 표시해 주세요 (26.2학기 BK 참여 중인 학생은 \'예\'로 되어 있어요).',
    fields:[
     {k:'name',l:'이름',t:'text',req:1},
     {k:'sid',l:'학번',t:'text'},
@@ -741,7 +741,10 @@ function setupPanels(){
       <button class="btn" data-act="jcrfill">논문 IF·JCR 채우기</button></div><p class="msg" id="jcr-msg"></p></div>
   <div class="panel" style="margin-top:18px"><div class="head"><h2 style="font-size:17px">초기 데이터 가져오기</h2></div>
     <p class="msg">seed.json 을 고르면 교수·담당 교수 명단·실적이 저장됩니다. <b>같은 번호의 자료를 덮어쓰니</b> 처음 한 번만 쓰세요.</p>
-    <div class="export"><input type="file" id="seed-file" accept=".json,application/json" style="max-width:320px"><button class="btn" data-act="seed">가져오기</button><span class="msg" id="seed-msg"></span></div></div>`;
+    <div class="export"><input type="file" id="seed-file" accept=".json,application/json" style="max-width:320px"><button class="btn" data-act="seed">가져오기</button><span class="msg" id="seed-msg"></span></div></div>
+  <div class="panel" style="margin-top:18px"><div class="head"><h2 style="font-size:17px">지도학생 명단 추가</h2></div>
+    <p class="msg">학생 명단 json(예: roster4.json)을 고르면 <b>지도학생 명단에 없는 학생만 새로 추가</b>합니다. 같은 교수님 명단에 같은 이름이 이미 있으면 건너뛰고, 기존 자료는 고치지 않아요. 여러 번 눌러도 중복되지 않습니다.</p>
+    <div class="export"><input type="file" id="roster-file" accept=".json,application/json" style="max-width:320px"><button class="btn" data-act="rosteradd">추가</button><span class="msg" id="roster-msg"></span></div></div>`;
 }
 
 /* ===== 엑셀 ===== */
@@ -980,6 +983,26 @@ async function touchProf(pid,extra){
   const upd=Object.assign({updated:today()},extra||{});
   await db.doc('profs/'+pid).update(upd); const p=prof(pid); Object.keys(upd).forEach(k=>{if(k.startsWith('done.')){p.done=p.done||{};p.done[k.slice(5)]=upd[k]}else p[k]=upd[k]});
 }
+async function rosterAdd(){
+  const f=$('#roster-file').files[0], msg=$('#roster-msg'); if(!f){msg.textContent='파일을 먼저 고르세요.';return}
+  try{
+    const d=JSON.parse(await f.text());
+    // 이름 비교: 한글만 / 영문만 따로 떼어 하나라도 같으면 같은 학생 (외국인 이름 표기 차이 대응)
+    const keys=(pid,v)=>{const s=String(v||''),h=s.replace(/[^가-힣]/g,''),l=s.replace(/[^A-Za-z]/g,'').toLowerCase();return [h&&pid+'|h|'+h,l&&pid+'|l|'+l].filter(Boolean)};
+    await loadAll(); // 최신 명단 기준으로 중복 확인
+    const have=new Set(S.data.items.filter(i=>i.cat==='roster').flatMap(i=>keys(i.prof,i.f.name)));
+    const add=[],skip=[],noProf=[];
+    (d.students||[]).forEach(x=>{const k=keys(x.prof,x.f&&x.f.name);
+      if(!prof(x.prof)||!k.length)noProf.push(x); else if(k.some(z=>have.has(z)))skip.push(x); else{k.forEach(z=>have.add(z));add.push(x)}});
+    if(!add.length){msg.textContent=`추가할 학생이 없어요 (이미 있음 ${skip.length}명).`;return}
+    if(!confirm(`${add.length}명을 새로 추가합니다. 이미 있는 ${skip.length}명은 건너뜁니다.${noProf.length?` 교수 정보가 없는 ${noProf.length}건도 건너뜁니다.`:''} 계속할까요?`))return;
+    msg.textContent='저장 중…';
+    for(let k=0;k<add.length;k+=400){const b=db.batch();
+      add.slice(k,k+400).forEach(x=>b.set(db.collection('items').doc(),{prof:x.prof,cat:'roster',pre:1,f:x.f,memo:x.memo||'',rv:{s:'none',c:''},updatedAt:TS()}));
+      await b.commit(); msg.textContent=`저장 중… ${Math.min(k+400,add.length)} / ${add.length}`}
+    msg.textContent=`${add.length}명 추가, ${skip.length}명은 이미 있어 건너뛰었어요.`; await refresh();
+  }catch(e){console.error(e);msg.textContent='추가하지 못했어요: '+(e.message||e)}
+}
 async function seedImport(){
   const f=$('#seed-file').files[0], msg=$('#seed-msg'); if(!f){msg.textContent='파일을 먼저 고르세요.';return}
   try{
@@ -1025,6 +1048,7 @@ document.addEventListener('click',async e=>{
   if(act==='copy'){S.exportCat=$('#exp-cat').value;S.tsv=catRows(S.exportCat).map(r=>r.map(v=>String(v??'').replace(/[\t\n]/g,' ')).join('\t')).join('\n');render();
     try{await navigator.clipboard.writeText(S.tsv);toast('복사했어요. 엑셀에 붙여 넣으세요')}catch(_){const t=$('#tsv');t.focus();t.select();toast('아래 내용을 선택해 복사해 주세요')}}
   if(act==='seed') await seedImport();
+  if(act==='rosteradd') await rosterAdd();
   if(act==='links') await loadLinks();
   if(act==='newkey') await newKey();
   if(act==='addprof') await addProf();
