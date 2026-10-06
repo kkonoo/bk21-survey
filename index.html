@@ -541,15 +541,14 @@ function homePanel(p,mode){
   return `<div class="welcome">
     <div class="panel">${intro}</div>
     <div class="panel"><dl class="kv">
-      <dt>구분</dt><dd>${esc(p.type)}${mode==='admin'?` · <select data-pf="rank" aria-label="직급" style="max-width:200px"><option value="">직급 선택</option>${['교수','부교수','조교수','기금교수(부교수대우)'].map(r=>`<option ${r===p.rank?'selected':''}>${r}</option>`).join('')}</select>`:p.rank?' · '+esc(p.rank):''}</dd>
+      <dt>구분</dt><dd>${mode!=='rev'?`<select data-pf="type" aria-label="기초/임상" style="max-width:100px">${['기초','임상'].map(t=>`<option ${t===p.type?'selected':''}>${t}</option>`).join('')}</select>`:esc(p.type)}${mode!=='rev'?` · <select data-pf="rank" aria-label="직급" style="max-width:200px"><option value="">직급 선택</option>${RANKS.map(r=>`<option ${r===p.rank?'selected':''}>${r}</option>`).join('')}</select>`:p.rank?' · '+esc(p.rank):''}</dd>
       <dt>연구자등록번호</dt><dd class="mono">${esc(p.rid||'—')}</dd>
       <dt><label for="hired">국내 최초 임용일</label></dt><dd><input id="hired" type="date" value="${esc(p.hired||'')}" data-pf="hired" style="max-width:180px" ${ro}>${(p.hired&&p.hired>='2017-03')||(!p.hired&&p.newflag)?' <span class="chip pre">신임</span>':''}</dd>
-      <dt><label for="fund">기금교수</label></dt><dd><select id="fund" data-pf="fund" style="max-width:120px" ${ro}><option value="">선택</option>${['예','아니오'].map(o=>`<option ${o===p.fund?'selected':''}>${o}</option>`).join('')}</select></dd>
       <dt>지도학생</dt><dd>${itemsOf(p.id,'roster').filter(i=>['재학','수료'].includes(i.f.status)&&!['박사후연구원','학부연구생','학·석 연계과정'].includes(i.f.degree)).length}명 (재학·수료 대학원생)</dd>
       <dt>담당 교수</dt><dd>${p.rev&&revName(p.rev)===p.name?'본인':esc(revName(p.rev))}</dd>
       <dt>확인 완료</dt><dd>${st.done} / ${CATS.length} 항목</dd>
     </dl><div class="prog" style="margin-top:12px"><i style="width:${st.done/CATS.length*100}%"></i></div>
-    ${mode==='prof'?`<p class="msg" style="margin-top:10px">구분·연구자등록번호가 틀리면 담당 교수께 알려 주세요.</p>`:''}</div>
+    ${mode==='prof'?`<p class="msg" style="margin-top:10px">직급은 위에서 직접 고칠 수 있어요. 연구자등록번호가 틀리면 담당 교수께 알려 주세요.</p>`:''}</div>
   </div>
   <div class="panel"><div class="head"><h2 style="font-size:17px">수정 요청 ${fixes.length}건</h2></div>
     ${fixes.length?`<div class="items">${fixes.map(i=>`<div class="item fix"><div><div class="t">${esc(CAT[i.cat].title(i.f))}</div><div class="meta"><span>${CAT[i.cat].name}</span></div></div><div class="acts"><button class="btn sm" data-goto="${i.cat}">열기</button></div><div class="note">의견: ${esc(i.rv.c)}</div></div>`).join('')}</div>`
@@ -558,6 +557,7 @@ function homePanel(p,mode){
 }
 
 /* ===== 승진 실적 (조교수·부교수 본인과 관리자에게만 보임, 담당 교수 화면에는 없음) ===== */
+const RANKS=['교수','부교수','조교수','기금교수(교수대우)','기금교수(부교수대우)','기금교수(조교수대우)'];
 const PROMO_NEXT={'조교수':'부교수','부교수':'교수'};
 const promoOK=(p,mode)=>mode!=='rev'&&!!PROMO_NEXT[p.rank];
 function promoCrit(type,target){ // 논문 총 편수 / JCR 상위 50% 이내 편수
@@ -697,7 +697,7 @@ function adminHome(){
     <p class="msg">추가하면 그 교수님의 개인 링크도 함께 만들어져요. 담당 교수는 위 표에서 나중에 바꿀 수 있어요.</p>
     <div class="export"><input id="np-name" placeholder="이름" style="max-width:120px" aria-label="교수 이름">
       <select id="np-type" aria-label="기초/임상"><option>기초</option><option>임상</option></select>
-      <select id="np-rank" aria-label="직급"><option value="">직급</option>${['교수','부교수','조교수','기금교수(부교수대우)'].map(r=>`<option>${r}</option>`).join('')}</select>
+      <select id="np-rank" aria-label="직급"><option value="">직급</option>${RANKS.map(r=>`<option>${r}</option>`).join('')}</select>
       <input id="np-rid" placeholder="연구자등록번호" style="max-width:150px" aria-label="연구자등록번호">
       <select id="np-rev" aria-label="담당 교수"><option value="">담당 교수 미배정</option>${S.data.reviewers.map(r=>`<option value="${r.id}">${esc(r.name)}</option>`).join('')}</select>
       <button class="btn primary" data-act="addprof">추가</button></div></div>
@@ -769,7 +769,7 @@ function exportXlsx(){
   if(!window.XLSX){toast('엑셀 도구를 불러오지 못했어요');return}
   const wb=XLSX.utils.book_new();
   const ph=[['교수','기초/임상','직급','연구자등록번호','국내 최초 임용일','기금교수','담당 교수','확인 완료','실적 건수','수정 요청','최근 수정']]
-    .concat(S.data.profs.map(p=>{const st=stats(p);return [p.name,p.type,p.rank||'',p.rid||'',p.hired||'',p.fund||'',revName(p.rev),st.done+'/'+CATS.length,st.n,st.fix,p.updated||'']}));
+    .concat(S.data.profs.map(p=>{const st=stats(p);return [p.name,p.type,p.rank||'',p.rid||'',p.hired||'',/^기금교수/.test(p.rank||'')?'예':(p.rank?'아니오':''),revName(p.rev),st.done+'/'+CATS.length,st.n,st.fix,p.updated||'']}));
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(ph),'교수 현황');
   CATS.forEach(c=>XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(catRows(c.key)),c.name.replace(/[\\/?*\[\]:]/g,'·').slice(0,31)));
   const d=new Date(), rg=(S.range.from||S.range.to)?`_${(S.range.from||'처음').replace('-','')}-${(S.range.to||'현재').replace('-','')}`:'';XLSX.writeFile(wb,`BK21_실적조사${rg}_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.xlsx`);
@@ -926,11 +926,11 @@ async function jcrUpload(){
     if(!confirm(`${n}\n\n${notes.slice(0,12).join('\n')}${notes.length>12?`\n… 외 ${notes.length-12}개 파일`:''}\n\n저장할까요?`)){msg.textContent='';return}
     for(const year of ys){msg.textContent=`저장 중… ${year}년`;
       const bk={};Object.entries(all[year]).forEach(([k,v])=>{(bk[jbucket(k)]=bk[jbucket(k)]||{})[k]=v});
-      const b=db.batch();
-      for(const i of Object.keys(bk)){const id=year+'_'+i;delete S.jcrCache[id];const cur=await jcrDoc(id);const m=Object.assign({},cur);
+      // 한 번에 묶어 저장하면 'Transaction too big' → 문서(32개 중 1개)마다 따로 저장
+      const ids=Object.keys(bk);let done=0;
+      for(const i of ids){const id=year+'_'+i;delete S.jcrCache[id];const cur=await jcrDoc(id);const m=Object.assign({},cur);
         Object.entries(bk[i]).forEach(([k,v])=>{const o=m[k];if(!o||(v[1]!==null&&(o[1]===null||v[1]<o[1]))||(o[1]===null&&v[1]===null))m[k]=v});
-        b.set(db.doc('jcr/'+id),{e:m});S.jcrCache[id]=m}
-      await b.commit();
+        await db.doc('jcr/'+id).set({e:m});S.jcrCache[id]=m;msg.textContent=`저장 중… ${year}년 ${++done} / ${ids.length}`}
     }
     const yall=Array.from(new Set([...S.data.jcrYears.map(String),...ys]));
     await db.doc('config/app').set({jcrYears:yall},{merge:true}); S.data.jcrYears=yall;
