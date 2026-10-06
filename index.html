@@ -734,8 +734,8 @@ function setupPanels(){
     <p class="msg">Apps Script 웹 앱 주소를 넣으면 실적마다 <b>증빙 첨부</b> 버튼이 생기고, 파일은 드라이브 <b>BK21_증빙/교수명/항목</b> 폴더에 저장돼요.</p>
     <div class="export"><input id="upurl" value="${esc(S.data.uploadUrl)}" placeholder="https://script.google.com/macros/s/…/exec" aria-label="업로드 주소"><button class="btn" data-act="upurl">저장</button></div></div>
   <div class="panel" style="margin-top:18px"><div class="head"><h2 style="font-size:17px">JCR 자료 (IF · 상위 %)</h2></div>
-    <p class="msg">JCR에서 받은 CSV·엑셀(여러 개 한꺼번에 가능)이나 조회표를 올리면 논문 자동 채우기 때 <b><b>출판 당시 JCR</b>(7월 이후 출판은 전년도, 1–6월은 전전년도)과 <b>기준 연도 JCR</b>(신청용, 예: 올해 기준) 두 가지 IF·상위 %가 들어가요. 분야별로 여러 파일을 올려도 되고, 저널이 여러 분야에 있으면 가장 좋은 순위를 씁니다. 저장된 연도: <b>${S.data.jcrYears.length?S.data.jcrYears.slice().sort().join(', '):'없음'}</b></p>
-    <div class="export"><input type="file" id="jcr-file" accept=".xlsx,.xls,.csv" multiple style="max-width:300px"><input id="jcr-year" placeholder="JCR 연도 (비우면 자동)" style="max-width:170px" aria-label="JCR 연도"><button class="btn" data-act="jcrup">올리기</button>
+    <p class="msg"><b>표준 형식 CSV</b>(연도·저널명·ISSN·eISSN·IF·상위%·분야)만 올릴 수 있어요. JCR 원본은 폴더의 <span class="mono">JCR/jcr_convert.py</span>로 먼저 변환하세요(<span class="mono">JCR/표준</span>에 저장됨). 올리면 논문 자동 채우기 때 <b><b>출판 당시 JCR</b>(7월 이후 출판은 전년도, 1–6월은 전전년도)과 <b>기준 연도 JCR</b>(신청용, 예: 올해 기준) 두 가지 IF·상위 %가 들어가요. 여러 파일을 한꺼번에 올려도 되고, 같은 저널은 가장 좋은 상위 %를 씁니다. 저장된 연도: <b>${S.data.jcrYears.length?S.data.jcrYears.slice().sort().join(', '):'없음'}</b></p>
+    <div class="export"><input type="file" id="jcr-file" accept=".xlsx,.xls,.csv" multiple style="max-width:300px"><button class="btn" data-act="jcrup">올리기</button>
       </div>
     <div class="export"><span class="msg">기준 연도 JCR</span><select id="jcr-base" style="width:auto" aria-label="기준 연도 JCR"><option value="">선택</option>${S.data.jcrYears.slice().sort().reverse().map(y=>`<option ${String(y)===String(S.data.jcrBase)?'selected':''}>${y}</option>`).join('')}</select>
       <button class="btn" data-act="jcrfill">논문 IF·JCR 채우기</button></div><p class="msg" id="jcr-msg"></p></div>
@@ -898,41 +898,19 @@ async function jcrLookup(issns,name,year){
   for(const y of order) for(const k of keys){const e=(await jcrDoc(y+'_'+jbucket(k)))[k];if(e)return {if:e[0],pct:e[1],year:y}}
   return null;
 }
-function jcrParse(rows,yearIn,fname){
-  let h=-1;for(let r=0;r<Math.min(rows.length,20);r++){const R=(rows[r]||[]).map(c=>String(c).trim());if(R.filter(Boolean).length>=3&&R.some(c=>/issn|journal|저널|학술지/i.test(c))){h=r;break}}
-  if(h<0) throw new Error('머리글(저널명·ISSN) 행을 찾지 못했어요');
-  const H=rows[h].map(c=>String(c||'').trim()), find=(re,no)=>H.findIndex(c=>re.test(c)&&!(no&&no.test(c)));
-  const col={name:find(/journal name|full journal title|journal title|저널명|학술지명|^journal$|^title$|저널|학술지/i,/abbr|약어|issn/i),
-    issn:find(/issn/i,/e-?issn|eissn|전자/i), eissn:find(/e-?issn|eissn|전자/i),
-    jif:find(/jif|impact factor|^if\b|영향력|피인용지수/i,/5[- ]?y|5년|five|without|jci|quartile|percentile|rank|순위|백분위|분위/i),
-    pct:find(/상위|top\s*%/i), rank:find(/rank|순위/i,/quartile|분위|percentile/i), perc:find(/percentile|백분위/i),
-    cat:find(/^category$|^분야$|카테고리/i), year:find(/^year$|^연도$|jcr\s*year|jcr\s*연도|게재연도/i)};
-  if(col.jif<0) throw new Error('IF 열을 찾지 못했어요');
-  const meta=rows.slice(0,h).map(r=>(r||[]).join(' ')).join(' ');
-  const year0=Number(yearIn)||Number((H[col.jif].match(/(20\d\d)/)||[])[1])||Number((meta.match(/JCR Year:\s*(20\d\d)/i)||[])[1])||Number((String(fname||'').match(/(20\d\d)/)||[])[1]);
-  if(!year0&&col.year<0) throw new Error('JCR 연도를 적어 주세요');
-  const num=v=>{const n=parseFloat(String(v).replace(/[^0-9.]/g,''));return isNaN(n)?null:n};
-  const recs=[];
-  for(const r of rows.slice(h+1)){ if(!r) continue;
-    const jif=num(r[col.jif]); if(jif===null) continue;
-    const y=col.year>=0?(Number(String(r[col.year]).match(/(20\d\d)/)?.[1])||year0):year0; if(!y) continue;
-    let pct=null;
-    if(col.pct>=0) pct=num(r[col.pct]);
-    if(pct===null&&col.rank>=0){const m=String(r[col.rank]||'').match(/(\d+)\s*\/\s*(\d+)/);if(m)pct=+m[1]/+m[2]*100}
-    if(pct===null&&col.perc>=0){const p=num(r[col.perc]);if(p!==null)pct=100-p}
-    recs.push({y,jif,pct,cat:col.cat>=0?String(r[col.cat]).trim():'',name:col.name>=0?r[col.name]:'',issn:col.issn>=0?r[col.issn]:'',eissn:col.eissn>=0?r[col.eissn]:''});
-  }
-  // 순위·백분위 열이 없고 분야 열이 있으면, 파일 안 분야별 IF 순위로 상위 %를 계산한다.
-  // JCR 화면 내보내기는 600개 저널에서 잘리므로, 600개 이상이면 분야 목록이 완전하지 않다고 보고 계산하지 않는다.
-  const uniq=new Set(recs.map(x=>jnorm(x.name))).size;
-  let mode=col.pct>=0||col.rank>=0||col.perc>=0?'file':'none';
-  if(mode==='none'&&col.cat>=0&&uniq<600){mode='calc';
-    const g={};recs.forEach(x=>{const k=x.y+'|'+x.cat;(g[k]=g[k]||[]).push(x)});
-    Object.values(g).forEach(L=>{L.sort((a,b)=>b.jif-a.jif);L.forEach(x=>{const rank=L.findIndex(z=>z.jif===x.jif)+1;x.pct=rank/L.length*100})});}
-  const byYear={};
-  recs.forEach(x=>{const out=byYear[x.y]=byYear[x.y]||{}, pct=x.pct===null?null:Math.round(x.pct*100)/100;
-    ['I'+inorm(x.issn),'I'+inorm(x.eissn),'N'+jnorm(x.name)].filter(k=>k.length>2&&!(k[0]==='I'&&k.length!==9)).forEach(k=>{const o=out[k];if(!o)out[k]=[x.jif,pct];else if(pct!==null&&(o[1]===null||pct<o[1]))out[k]=[x.jif,pct]})});
-  return {byYear,mode,uniq,col:Object.fromEntries(Object.entries(col).map(([k,v])=>[k,v>=0?H[v]:'—']))};
+// 표준 형식만 받는다: 연도, 저널명, ISSN, eISSN, IF, 상위%, 분야 (JCR/jcr_convert.py 로 변환)
+const JCR_STD=['연도','저널명','ISSN','eISSN','IF','상위%','분야'];
+function jcrParse(rows,fname){
+  const H=(rows[0]||[]).map(c=>String(c||'').replace(/^﻿/,'').trim()), ix=Object.fromEntries(JCR_STD.map(k=>[k,H.indexOf(k)]));
+  const miss=JCR_STD.filter(k=>ix[k]<0); if(miss.length) throw new Error(`${fname}: 표준 형식이 아니에요 (없는 열: ${miss.join(', ')}). jcr_convert.py로 먼저 변환해 주세요`);
+  const num=v=>{const t=String(v??'').trim();if(!t)return null;const n=parseFloat(t);return isNaN(n)?null:n};
+  const byYear={};let n=0,withPct=0;
+  for(const r of rows.slice(1)){ if(!r) continue;
+    const y=parseInt(r[ix['연도']]), jif=num(r[ix.IF]); if(!y||jif===null) continue;
+    const pct=num(r[ix['상위%']]), v=[jif,pct===null?null:Math.round(pct*100)/100], out=byYear[y]=byYear[y]||{}; n++; if(pct!==null)withPct++;
+    ['I'+inorm(r[ix.ISSN]),'I'+inorm(r[ix.eISSN]),'N'+jnorm(r[ix['저널명']])].filter(k=>k.length>2&&!(k[0]==='I'&&k.length!==9)).forEach(k=>{const o=out[k];if(!o||(v[1]!==null&&(o[1]===null||v[1]<o[1])))out[k]=v})}
+  if(!n) throw new Error(fname+': 읽을 행이 없어요');
+  return {byYear,n,withPct};
 }
 async function jcrUpload(){
   const files=[...$('#jcr-file').files], msg=$('#jcr-msg'); if(!files.length){msg.textContent='파일을 먼저 고르세요.';return}
@@ -940,9 +918,9 @@ async function jcrUpload(){
     const all={}, notes=[];
     for(const f of files){msg.textContent='읽는 중… '+f.name;
       const wb=XLSX.read(await f.arrayBuffer(),{type:'array'}); const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''});
-      const r=jcrParse(rows,$('#jcr-year').value.trim(),f.name);
+      const r=jcrParse(rows,f.name);
       Object.entries(r.byYear).forEach(([y,out])=>{const A=all[y]=all[y]||{};Object.entries(out).forEach(([k,v])=>{const o=A[k];if(!o||(v[1]!==null&&(o[1]===null||v[1]<o[1])))A[k]=v})});
-      notes.push(`${f.name}: 저널 ${r.uniq}개 · 상위% ${r.mode==='file'?'파일 값':r.mode==='calc'?'분야별 순위로 계산':'없음'+(r.uniq>=600?' (600개에서 잘린 목록이라 계산 안 함)':'')}`);
+      notes.push(`${f.name}: JCR ${Object.keys(r.byYear).join('·')}년 · 저널 ${r.n}개 · 상위% 있음 ${r.withPct}개`);
     }
     const ys=Object.keys(all).sort(), n=ys.map(y=>`${y}년 ${Object.keys(all[y]).filter(k=>k[0]==='N').length}개`).join(', ');
     if(!confirm(`${n}\n\n${notes.slice(0,12).join('\n')}${notes.length>12?`\n… 외 ${notes.length-12}개 파일`:''}\n\n저장할까요?`)){msg.textContent='';return}
