@@ -541,7 +541,7 @@ function homePanel(p,mode){
   return `<div class="welcome">
     <div class="panel">${intro}</div>
     <div class="panel"><dl class="kv">
-      <dt>구분</dt><dd>${esc(p.type)}${p.rank?' · '+esc(p.rank):''}</dd>
+      <dt>구분</dt><dd>${esc(p.type)}${mode==='admin'?` · <select data-pf="rank" aria-label="직급" style="max-width:200px"><option value="">직급 선택</option>${['교수','부교수','조교수','기금교수(부교수대우)'].map(r=>`<option ${r===p.rank?'selected':''}>${r}</option>`).join('')}</select>`:p.rank?' · '+esc(p.rank):''}</dd>
       <dt>연구자등록번호</dt><dd class="mono">${esc(p.rid||'—')}</dd>
       <dt><label for="hired">국내 최초 임용일</label></dt><dd><input id="hired" type="date" value="${esc(p.hired||'')}" data-pf="hired" style="max-width:180px" ${ro}>${(p.hired&&p.hired>='2017-03')||(!p.hired&&p.newflag)?' <span class="chip pre">신임</span>':''}</dd>
       <dt><label for="fund">기금교수</label></dt><dd><select id="fund" data-pf="fund" style="max-width:120px" ${ro}><option value="">선택</option>${['예','아니오'].map(o=>`<option ${o===p.fund?'selected':''}>${o}</option>`).join('')}</select></dd>
