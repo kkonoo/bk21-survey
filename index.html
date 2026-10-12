@@ -263,7 +263,7 @@ const CATS = [
     {k:'rep',l:'신청서 제출 후보',t:'yn'},
     {k:'merit',l:'우수성 (후보일 때만)',t:'area',max:500,full:1},
    ], title:f=>f.title, meta:f=>[f.kind, f.country, f.number, f.date, f.amount&&(Number(f.amount).toLocaleString()+' 천원')], chips:f=>[f.rep==='예'&&['rep','제출 후보'], f.intl==='예'&&['pre','국제공동']]},
-  {key:'top', name:'대표 업적 (최근 10년)', table:'3-5', rule:'교육연구단의 <b>학문적 수월성</b>을 보여줄 최근 10년(2017~) 최고 업적. 교육연구단 전체에서 <b>3건</b>만 고르므로 교수님별 1건만 추천해 주세요. 없으면 비워 두셔도 됩니다.',
+  {key:'top', name:'대표 업적 (최근 10년)', table:'3-5', rule:'교육연구단의 <b>학문적 수월성</b>을 보여줄 최근 10년(2017~) 최고 업적. 교육연구단 전체에서 <b>3건</b>만 고르므로 교수님별 1건만 추천해 주세요. 없으면 비워 두셔도 됩니다.<br>글자 수 (공백 제외): <b>대표 연구업적물·저서·특허 우수성 각 500자</b>, <b>대표 취업사례 200자</b>.',
    fields:[
     {k:'ttype',l:'종류',t:'select',o:'toptype',req:1},
     {k:'year',l:'연도',t:'text',ph:'2021',req:1},
