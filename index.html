@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>BK21 실적 입력</title>
 <meta name="robots" content="noindex">
+<script>try{const t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -53,6 +54,7 @@ textarea{min-height:84px;resize:vertical}
 .btn.ghost{border-color:transparent;background:none;color:var(--mute);padding:6px 8px}
 .btn.sm{padding:5px 10px;font-size:13px}
 .btn.ok{border-color:var(--ok);color:var(--ok)}
+.btn.round{width:36px;height:36px;padding:0;justify-content:center;border-radius:50%;background:var(--sunk);font-size:17px;line-height:1}
 .btn.warn{border-color:var(--warn);color:var(--warn)}
 .layout{display:grid;grid-template-columns:250px minmax(0,1fr);gap:24px;align-items:start}
 nav.cats{position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px);display:flex;flex-direction:column;gap:2px}
@@ -66,6 +68,23 @@ nav.cats button.promo-nav{margin-top:10px;border-top:1px dashed var(--line);bord
 .promo .verdict.ok{background:var(--ok-soft);color:var(--ok)}
 .promo td.num,.promo th.num{text-align:right;font-variant-numeric:tabular-nums}
 .promo tr.zero td{color:var(--mute)}
+nav.cats button.promo-nav+button.promo-nav{margin-top:0;border-top:0;border-radius:8px}
+.hex svg{display:block;width:100%;max-width:440px;margin:4px auto 0;overflow:visible}
+.hex .ring{fill:none;stroke:var(--line)}
+.hex .ring.mid{stroke:var(--mute);stroke-dasharray:4 4}
+.hex .spoke{stroke:var(--line)}
+.hex .me{fill:var(--accent);fill-opacity:.16;stroke:var(--accent);stroke-width:2;stroke-linejoin:round}
+.hex .pt{fill:var(--accent);stroke:var(--surface);stroke-width:2}
+.hex text{fill:var(--ink);font-size:13px;font-weight:600}
+.hex text.v{fill:var(--mute);font-family:var(--mono);font-weight:400;font-size:12px}
+.hex td.num,.hex th.num{text-align:right;font-variant-numeric:tabular-nums}
+.hex td.wrap{white-space:normal;color:var(--mute);font-size:13px;min-width:240px}
+.recap .tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.recap .tile{background:var(--sunk);border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:2px}
+.recap .tile b{font-size:24px;color:var(--navy);font-variant-numeric:tabular-nums}
+.recap .tile b small{font-size:14px;margin-left:2px}
+.recap .tile span{font-size:13px;color:var(--mute)}
+.recap h3{font-size:15px;margin:22px 0 8px}
 .dot{width:10px;height:10px;border-radius:50%;border:2px solid var(--line);justify-self:center}
 .dot.done{background:var(--ok);border-color:var(--ok)}
 .dot.fix{background:var(--warn);border-color:var(--warn)}
@@ -116,6 +135,7 @@ form.edit .bar{grid-column:1/-1;display:flex;gap:8px;justify-content:flex-end;fl
 .years label{font-family:var(--mono);font-size:12px}
 @media (max-width:820px){.years{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .msg.err{color:var(--warn)}
+.due{display:inline-block;font-weight:700;color:var(--em);background:var(--accent-soft);padding:1px 10px;border-radius:999px}
 .foot{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
 .welcome{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px;margin-bottom:20px}
 .welcome .panel h2{margin:0 0 6px;font-size:22px;text-wrap:balance}
@@ -422,7 +442,7 @@ const db = firebase.firestore();
 const TS = () => firebase.firestore.FieldValue.serverTimestamp();
 
 /* ===== 상태 ===== */
-const S = {data:{profs:[],items:[],reviewers:[],deadline:'추후 공지', uploadUrl:'', jcrYears:[], jcrBase:''}, user:null, key:'', name:'', links:null, roles:[], role:null,
+const S = {data:{profs:[],items:[],reviewers:[],deadline:'추후 공지', uploadUrl:'', jcrYears:[], jcrBase:'', bench:null, recap:null}, user:null, key:'', name:'', links:null, roles:[], role:null,
   me:{prof:null,rev:null}, cat:'home', open:null, editing:null, filterFix:false, exportCat:'paper', tsv:'', busy:false, range:{from:'',to:''}, jcrCache:{}, attachFor:null};
 const $ = s=>document.querySelector(s);
 const esc = v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -450,7 +470,7 @@ const docOf=d=>{const x=Object.assign({id:d.id},d.data());if(x.cat==='paper'&&x.
 async function loadCommon(){
   const [rv,cfg]=await Promise.all([db.collection('reviewers').get(),db.doc('config/app').get()]);
   S.data.reviewers=rv.docs.map(docOf).sort((a,b)=>a.id.localeCompare(b.id,undefined,{numeric:true}));
-  if(cfg.exists){const c=cfg.data();S.data.deadline=c.deadline||'추후 공지';S.data.uploadUrl=c.uploadUrl||'';S.data.jcrYears=c.jcrYears||[];S.data.jcrBase=c.jcrBase||''}
+  if(cfg.exists){const c=cfg.data();S.data.deadline=c.deadline||'추후 공지';S.data.uploadUrl=c.uploadUrl||'';S.data.jcrYears=c.jcrYears||[];S.data.jcrBase=c.jcrBase||'';S.data.bench=c.bench||null;S.data.recap=c.recap||null}
 }
 function putProf(p){const i=S.data.profs.findIndex(x=>x.id===p.id);if(i>=0)S.data.profs[i]=p;else S.data.profs.push(p);S.data.profs.sort((a,b)=>a.name.localeCompare(b.name,'ko'))}
 function putItems(pid,list){S.data.items=S.data.items.filter(i=>i.prof!==pid).concat(list)}
@@ -501,20 +521,23 @@ async function boot(u){
 /* ===== 렌더 ===== */
 function render(){
   if(!S.role) return;
-  const seg=$('#seg'); seg.hidden=S.roles.length<2&&!isAdmin();
-  const labels={prof:'내 실적',rev:'담당 교수 검토',admin:'관리자'};
-  const roles=isAdmin()?Array.from(new Set([...S.roles.filter(r=>r!=='admin'),'rev','admin'])):S.roles;
+  const seg=$('#seg');
+  const labels={prof:'내 실적',rev:'담당 교수 검토',admin:'관리자',recap:'학과 결산'};
+  const roles=(isAdmin()?Array.from(new Set([...S.roles.filter(r=>r!=='admin'),'rev','admin'])):S.roles).concat(S.data.recap?['recap']:[]);
+  seg.hidden=roles.length<2;
   seg.innerHTML=roles.map(r=>`<button data-role="${r}" aria-pressed="${r===S.role}">${labels[r]}</button>`).join('');
   const who=$('#who');
   let sel='';
   if(S.role==='rev'&&isAdmin()) sel=`<select id="me-rev" aria-label="담당 교수 선택"><option value="">담당 교수 선택</option>${S.data.reviewers.map(r=>`<option value="${r.id}" ${r.id===S.me.rev?'selected':''}>${esc(r.name)}</option>`).join('')}</select>`;
-  who.innerHTML=`${sel}<span>${esc(S.name)}</span><button class="btn ghost sm" data-act="refresh">새로고침</button>`;
+  who.innerHTML=`${sel}<span>${esc(S.name)}</span><button class="btn round" data-act="refresh" aria-label="새로고침" title="새로고침">↻</button><button class="btn round" data-act="theme" aria-label="${curTheme()==='dark'?'라이트 모드로 바꾸기':'다크 모드로 바꾸기'}" title="${curTheme()==='dark'?'라이트 모드':'다크 모드'}">${curTheme()==='dark'?'☀️':'🌙'}</button>`;
   const app=$('#app');
   if(S.busy){app.innerHTML='<div class="empty">불러오는 중…</div>';return}
+  if(S.role==='recap'){app.innerHTML=recapView();return}
   if(S.role==='prof'){ if(!prof(S.me.prof)){app.innerHTML='<div class="empty">교수 정보를 찾지 못했어요. BK 사무국에 알려 주세요.</div>';return} app.innerHTML=profView(S.me.prof,'prof'); }
   else if(S.role==='rev') app.innerHTML=S.open?backBar()+profView(S.open,'rev'):revHome();
   else app.innerHTML=S.open?backBar()+profView(S.open,'admin'):adminHome();
 }
+const curTheme=()=>document.documentElement.dataset.theme||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
 const backBar=()=>`<button class="btn ghost back" data-act="back">← 목록으로</button>`;
 
 function navHTML(p,mode){
@@ -524,15 +547,16 @@ function navHTML(p,mode){
     ${CATS.map(c=>{const it=itemsOf(p.id,c.key);const fx=it.some(i=>i.rv.s==='fix');
       return `<button data-cat="${c.key}" aria-current="${S.cat===c.key}"><span class="dot ${fx?'fix':done[c.key]?'done':''}"></span><span>${c.name}</span><span class="count">${it.length}</span></button>`}).join('')}
     ${promoOK(p,mode)?`<button data-cat="promo" class="promo-nav" aria-current="${S.cat==='promo'}"><span></span><span>승진 실적 (참고)</span><span></span></button>`:''}
+    ${mode!=='rev'?`<button data-cat="hex" class="promo-nav" aria-current="${S.cat==='hex'}"><span></span><span>실적 육각형</span><span></span></button>`:''}
   </nav>`;
 }
-function profView(pid,mode){const p=prof(pid);if(!p)return '<div class="empty">교수 정보를 불러오지 못했어요.</div>';return `<div class="layout">${navHTML(p,mode)}<section>${S.cat==='home'||(S.cat==='promo'&&!promoOK(p,mode))?homePanel(p,mode):S.cat==='promo'?promoPanel(p):catPanel(p,CAT[S.cat],mode)}</section></div>`}
+function profView(pid,mode){const p=prof(pid);if(!p)return '<div class="empty">교수 정보를 불러오지 못했어요.</div>';return `<div class="layout">${navHTML(p,mode)}<section>${S.cat==='home'||(S.cat==='promo'&&!promoOK(p,mode))||(S.cat==='hex'&&mode==='rev')?homePanel(p,mode):S.cat==='promo'?promoPanel(p):S.cat==='hex'?hexPanel(p):catPanel(p,CAT[S.cat],mode)}</section></div>`}
 
 function homePanel(p,mode){
   const st=stats(p), fixes=itemsOf(p.id).filter(i=>i.rv.s==='fix');
   const intro=mode==='prof'
     ? `<h2>${esc(p.name)} 교수님, 실적 확인을 부탁드립니다</h2>
-       <p class="msg">5단계 BK21 신청 준비를 위한 조사입니다. 마감 <b>${esc(S.data.deadline)}</b></p>
+       <p class="msg">5단계 BK21 신청 준비를 위한 조사입니다. <span class="due">마감 ${esc(S.data.deadline)}</span></p>
        <ol class="steps"><li>맨 위 <b>지도학생 및 연구원 명단</b>에 졸업생·박사후연구원을 먼저 추가해 주세요. 논문의 학생 주저자를 이 명단에서 고릅니다.</li>
        <li>왼쪽 항목을 하나씩 열어 <b>미리 채워진 실적</b>을 확인하고 틀린 것을 고쳐 주세요.</li>
        <li>빠진 실적은 <b>+ 추가</b>로 넣어 주세요. 논문은 DOI만 넣으면 자동으로 채워집니다.</li>
@@ -598,6 +622,134 @@ function promoPanel(p){
   <div class="panel promo" style="margin-top:16px"><div class="head"><h2 style="font-size:17px">논문별 환산 (${P.length}편)</h2></div>
     ${P.length?`<div class="tablebox"><table><thead><tr><th>학술지 / 제목</th><th>게재</th><th>저자 역할</th><th class="num">JCR 상위 %</th><th class="num">환산</th><th class="num">≤50%</th></tr></thead><tbody>${rows}</tbody></table></div>`:'<div class="empty">해당 기간의 논문이 없습니다.</div>'}
     <p class="msg" style="margin-top:12px">환산 규칙: 제1·교신(주)저자 논문만 셈 · 주저자가 n명이면 1/n편 · JCR 상위 5% 이내는 2편 · 공저자는 0편. 증례보고(0.5편)는 이 조사에서 구분하지 않아 원저로 계산됩니다.</p>
+  </div>`;
+}
+
+/* ===== 실적 육각형 (본인과 관리자에게만 보임, 담당 교수가 '확인'한 실적만 셈) ===== */
+// 축마다 연평균 값을 내고, 관리자가 게시한 학과 기준(10·25·50·75·90% 값)에 대어 0–100점(학과 안 위치)으로 바꾼다
+const HEX=[['paper','논문','편/년'],['grant','연구비','백만원/년'],['ind','산학·사회','점/년'],['stu','학생지도','점'],['edu','교육','점/년'],['intl','국제화','점/년']];
+const HEX_Q=[10,25,50,75,90];
+const IPW={기술이전:2,창업:2}; // 나머지(등록특허·저서)는 1점
+const NONGRAD=['박사후연구원','학부연구생','학·석 연계과정'];
+const nowYM=()=>{const d=new Date();return d.getFullYear()*100+d.getMonth()+1};
+const ymText=ym=>Math.floor(ym/100)+(ym%100?'.'+String(ym%100).padStart(2,'0'):'');
+function hexRaw(p,end){
+  const ok=itemsOf(p.id).filter(i=>i.rv.s==='ok'), of=c=>ok.filter(i=>i.cat===c), sum=(a,g)=>a.reduce((s,x)=>s+g(x),0);
+  // 연평균 기간: 2021.1과 국내 최초 임용일 중 늦은 달부터 end 까지 (최소 1년)
+  const s=Math.max(202101,ymOf(p.hired)), y=Math.max(1,((Math.floor(end/100)-Math.floor(s/100))*12+end%100-(s%100||1)+1)/12);
+  const P=of('paper').map(promoPaper), R=of('roster'), L=of('lec'), ipn=k=>of('ip').filter(i=>i.f.kind===k).length;
+  const paid=sum(of('grant'),i=>sum(Object.values(i.f.paid||{}),v=>parseFloat(v)||0))/1000; // 천원 → 백만원
+  const cur=R.filter(i=>['재학','수료'].includes(i.f.status)&&!NONGRAD.includes(i.f.degree)).length;
+  const ms=R.filter(i=>i.f.status==='졸업'&&i.f.degree==='석사').length, phd=R.filter(i=>i.f.status==='졸업'&&['박사','석박통합'].includes(i.f.degree)).length;
+  const stuP=of('paper').filter(i=>i.f.student).length, cr=sum(L,i=>(parseFloat(i.f.credit)||0)*(i.f.eng==='예'?1.5:1));
+  const ia=ok.filter(i=>(i.cat==='paper'||i.cat==='ip')&&i.f.intl==='예').length;
+  const v={
+    paper:sum(P,x=>(x.main?1/x.n:.2)*(x.j!==null&&x.j<=5?2:1))/y,
+    grant:paid/y,
+    ind:(sum(of('ip'),i=>IPW[i.f.kind]||1)+of('soc').length)/y,
+    stu:cur+(ms+phd*2+of('stu').length+stuP*2)/y, // 지금 지도 중인 학생 수는 연평균하지 않음
+    edu:(cr+of('edu').length*3)/y,
+    intl:(of('intl').length+of('collab').length+of('ex').length+ia)/y};
+  Object.keys(v).forEach(k=>v[k]=Math.round(v[k]*1000)/1000);
+  const d={
+    paper:`주저자 ${P.filter(x=>x.main).length}편 · 공저자 ${P.filter(x=>!x.main).length}편 · JCR 상위 5% ${P.filter(x=>x.j!==null&&x.j<=5).length}편`,
+    grant:`과제 ${of('grant').length}건 · 입금 합계 ${Math.round(paid).toLocaleString()}백만원`,
+    ind:`등록특허 ${ipn('등록특허')} · 기술이전 ${ipn('기술이전')} · 창업 ${ipn('창업')} · 저서 ${ipn('저서')} · 산업·사회 기여 ${of('soc').length}`,
+    stu:`재학·수료 대학원생 ${cur}명 · 졸업 석사 ${ms}·박사 ${phd}명 · 학생 실적 ${of('stu').length}건 · 학생 주저자 논문 ${stuP}편`,
+    edu:`대학원 강의 ${L.length}과목 ${Math.round(cr*10)/10}학점 · 교육역량 ${of('edu').length}건`,
+    intl:`국제학술활동 ${of('intl').length} · 국제공동연구 ${of('collab').length+ia} (논문·특허 ${ia} 포함) · 외국기관 교류 ${of('ex').length}`};
+  return {v,d,s,y,n:itemsOf(p.id).length,ok:ok.length};
+}
+function hexScore(x,q){ // 학과 기준값 사이를 선형으로 이어 0–100. 기준값과 같으면(동점) 그 구간의 가운데
+  const A=[[0,0],...HEX_Q.map((p,k)=>[p,q[k]]),[100,q[4]+Math.max(q[4]-q[3],q[4]/2)]];
+  const eq=A.filter(a=>a[1]===x); if(eq.length) return (eq[0][0]+eq[eq.length-1][0])/2;
+  const hi=A.findIndex(a=>a[1]>x); if(hi<0) return 100;
+  const [p0,v0]=A[hi-1],[p1,v1]=A[hi]; return p0+(p1-p0)*(x-v0)/(v1-v0);
+}
+function hexSVG(sc){
+  const R=110, pt=(k,r)=>{const a=-Math.PI/2+k*Math.PI/3;return [Math.cos(a)*r,Math.sin(a)*r]}, f=n=>n.toFixed(1);
+  const poly=rs=>rs.map((r,k)=>pt(k,r).map(f).join(',')).join(' '), all=r=>HEX.map(()=>r);
+  const grid=[25,50,75,100].map(v=>`<polygon class="ring${v===50?' mid':''}" points="${poly(all(R*v/100))}"/>`).join('')+HEX.map((_,k)=>{const [x,y]=pt(k,R);return `<line class="spoke" x1="0" y1="0" x2="${f(x)}" y2="${f(y)}"/>`}).join('');
+  const me=sc?`<polygon class="me" points="${poly(sc.map(s=>R*s/100))}"/>`+HEX.map((h,k)=>{const [x,y]=pt(k,R*sc[k]/100);return `<circle class="pt" cx="${f(x)}" cy="${f(y)}" r="4.5"><title>${h[1]} ${Math.round(sc[k])}점</title></circle>`}).join(''):'';
+  const labels=HEX.map((h,k)=>{const [x,y]=pt(k,R+20), an=Math.abs(x)<1?'middle':x>0?'start':'end', ty=y+(y<-R?-14:y>R?4:-6);
+    return `<text x="${f(x)}" y="${f(ty)}" text-anchor="${an}">${h[1]}</text>${sc?`<text class="v" x="${f(x)}" y="${f(ty+16)}" text-anchor="${an}">${Math.round(sc[k])}점</text>`:''}`}).join('');
+  return `<svg viewBox="-200 -165 400 330" role="img" aria-label="${sc?HEX.map((h,k)=>h[1]+' '+Math.round(sc[k])+'점').join(', '):'학과 기준이 아직 없어 점수 없음'}">${grid}${me}${labels}</svg>`;
+}
+function hexPanel(p){
+  const B=S.data.bench, r=hexRaw(p,(B&&B.ym)||nowYM()), sc=B?HEX.map(h=>hexScore(r.v[h[0]],B.q[h[0]])):null;
+  const fmt=v=>(Math.round(v*10)/10).toLocaleString();
+  const rows=HEX.map((h,k)=>`<tr><td>${h[1]}</td><td class="num">${fmt(r.v[h[0]])} <span class="msg">${h[2]}</span></td><td class="num">${B?fmt(B.q[h[0]][2]):'—'}</td><td class="num">${sc?Math.round(sc[k]):'—'}</td><td class="wrap">${r.d[h[0]]}</td></tr>`).join('');
+  return `<div class="panel hex"><div class="head"><h2 style="font-size:17px">실적 육각형 · ${esc(p.name)}</h2></div>
+    <p class="msg">교수님 본인과 BK 사무국만 보는 화면입니다 (담당 교수 화면에는 나오지 않아요). 축마다 <b>학과 교수님들 사이에서의 위치</b>를 0–100점으로 보여줘요. 50점이 학과 중앙값이고, 안쪽으로 들어간 축이 상대적으로 약한 부분이에요.</p>
+    ${B?'':'<p class="msg" style="margin-top:8px"><b>아직 학과 기준이 게시되지 않았어요.</b> BK 사무국이 집계를 게시하면 점수가 나와요. 아래 연평균 값은 지금도 볼 수 있어요.</p>'}
+    ${hexSVG(sc)}
+    ${B?'<p class="msg" style="text-align:center;margin:6px 0 0">점선 = 학과 중앙값 (50점)</p>':''}
+  </div>
+  <div class="panel hex" style="margin-top:16px"><div class="head"><h2 style="font-size:17px">축별 내역</h2><span class="msg">담당 교수가 확인한 실적 ${r.ok} / ${r.n}건 · ${ymText(r.s)}부터 ${fmt(r.y)}년</span></div>
+    <div class="tablebox"><table><thead><tr><th>축</th><th class="num">내 값</th><th class="num">학과 중앙값</th><th class="num">점수</th><th>반영 내역</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <p class="msg" style="margin-top:12px">계산 규칙: <b>논문</b> 주저자 1/n편(주저자 수로 나눔)·공저자 0.2편, JCR 상위 5% 이내는 2배 · <b>연구비</b> 연도별 입금액 · <b>산학·사회</b> 등록특허·저서·사회 기여 1점, 기술이전·창업 2점 · <b>학생지도</b> 지금 재학·수료 중인 대학원생 1명당 1점 + 석사 졸업 1점·박사 졸업 2점·학생 실적 1점·학생 주저자 논문 2점의 연평균 · <b>교육</b> 대학원 강의 학점(영어 강의 1.5배) + 교육역량 1건 3점 · <b>국제화</b> 국제학술활동·국제공동연구(국제 논문·특허 포함)·외국기관 교류 1건 1점. 학생지도의 재학생 수 말고는 모두 <b>2021.1과 국내 최초 임용일 중 늦은 달부터의 연평균</b>입니다.</p>
+    ${B?`<p class="msg">학과 기준: ${esc(B.at)} 게시 · 확인된 실적이 있는 교수 ${B.n}명</p>`:''}
+  </div>`;
+}
+
+/* ===== 학과 결산 (모든 링크에서 보임, 교수 이름 없이 확인된 실적만) ===== */
+// 학기: 1학기 3–8월, 2학기 9월–이듬해 2월. 연도는 1–12월. 월이 없는 실적은 연도 결산에만 들어간다
+const semOf=ym=>{const y=Math.floor(ym/100),m=ym%100;return !m?'':m>=3&&m<=8?y+'-1':m>=9?y+'-2':(y-1)+'-2'};
+const periodsOf=ym=>ym?[String(Math.floor(ym/100)),semOf(ym)].filter(Boolean):[];
+const pLabel=k=>k.includes('-')?`${k.slice(0,4)}년 ${k.slice(5)}학기 (${k.endsWith('1')?'3–8월':'9월–이듬해 2월'})`:k+'년';
+const won=v=>{v=parseFloat(v)||0;return v>=100000?(Math.round(v/10000)/10).toLocaleString()+'억원':Math.round(v/1000).toLocaleString()+'백만원'}; // 천원 단위
+const RECAP_N=[['p','논문','편'],['p10','JCR 상위 10% 논문','편'],['pi','국제공동 논문','편'],['g','신규 연구과제','건'],['gm','연구비 입금',''],['pat','등록특허','건'],['tt','기술이전','건'],['su','창업','건'],['bk','저서','건'],
+  ['phd','박사 배출','명'],['ms','석사 배출','명'],['sa','지도학생 수상','건'],['si','학생 국제학회 발표','건'],['ia','국제학회 수상','건'],['it','초청강연·기조연설','건'],['ed','교육 실적','건'],['so','산업·사회 기여','건']];
+const RECAP_HL=[['paper','JCR 상위 10% 논문',0],['grant','신규 연구과제 (연구책임자, 총 연구비 큰 순 5건)',5],['tech','기술이전·창업',0],['award','수상',0],['talk','초청강연·기조연설',0]];
+function recapBuild(at,ym0){
+  const P={}, hl=[], seen=new Set(), nk=s=>String(s||'').toLowerCase().replace(/[^0-9a-z가-힣]/g,'');
+  const add=(ym,k,n)=>periodsOf(ym).forEach(p=>{const c=P[p]=P[p]||{};c[k]=(c[k]||0)+(n==null?1:n)});
+  const dup=(c,key)=>{if(!key)return false;key=c+'|'+key;if(seen.has(key))return true;seen.add(key);return false}; // 여러 교수가 함께한 논문·특허·과제는 한 번만
+  S.data.items.filter(i=>i.rv.s==='ok').forEach(i=>{const f=i.f, ym=dkey(i);
+    if(i.cat==='paper'&&!dup('paper',nk(f.doi)||nk(f.title))){const j=parseFloat(f.jcr);add(ym,'p');if(f.intl==='예')add(ym,'pi');
+      if(j<=10){add(ym,'p10');hl.push({g:'paper',ym,t:f.title||'',s:[f.journal,'JCR 상위 '+j+'%',f.student&&'학생 주저자'].filter(Boolean).join(' · '),o:j})}}
+    if(i.cat==='grant'){Object.entries(f.paid||{}).forEach(([y,v])=>{const n=parseFloat(v);if(n)add(+y*100,'gm',n)}); // 입금은 교수별 몫이라 중복 없이 모두 더함
+      if(!dup('grant',nk(f.title))){add(ym,'g');if(f.grole==='연구책임자'){const t=parseFloat(f.total)||0;hl.push({g:'grant',ym,t:f.title||'',s:[f.ministry,f.program,t&&won(t)].filter(Boolean).join(' · '),o:-t})}}}
+    if(i.cat==='ip'&&!dup('ip',f.kind+nk(f.title))){const k={등록특허:'pat',기술이전:'tt',창업:'su',저서:'bk'}[f.kind];if(k)add(ym,k);
+      if(f.kind==='기술이전'||f.kind==='창업')hl.push({g:'tech',ym,t:f.title||'',s:[f.kind,parseFloat(f.amount)>0&&won(f.amount)].filter(Boolean).join(' · '),o:-ym})}
+    if(i.cat==='roster'&&f.status==='졸업'){const g=ymOf(f.grad);if(f.degree==='석사')add(g,'ms');else if(['박사','석박통합'].includes(f.degree))add(g,'phd')}
+    if(i.cat==='stu'){if(f.kind==='수상'){add(ym,'sa');hl.push({g:'award',ym,t:f.title||'',s:'지도학생 수상',o:-ym})}if(f.kind==='학회 발표 (국제)')add(ym,'si')}
+    if(i.cat==='intl'){if(f.kind==='국제학회 수상'){add(ym,'ia');hl.push({g:'award',ym,t:f.content||f.event||'',s:f.content?f.event||'':'',o:-ym})}
+      if(f.kind==='초청강연'||f.kind==='기조연설'){add(ym,'it');hl.push({g:'talk',ym,t:f.content||f.event||'',s:[f.kind,f.content&&f.event,f.place].filter(Boolean).join(' · '),o:-ym})}}
+    if(i.cat==='edu'){add(ym,'ed');if(f.kind==='교육 수상 (교외)')hl.push({g:'award',ym,t:f.title||'',s:'교육 수상',o:-ym})}
+    if(i.cat==='soc')add(ym,'so');
+  });
+  return {at,ym:ym0,periods:P,hl};
+}
+function benchBuild(at,ym){
+  const V=S.data.profs.filter(p=>itemsOf(p.id).some(i=>i.rv.s==='ok')).map(p=>hexRaw(p,ym).v);
+  const qt=(a,q)=>{const h=(a.length-1)*q/100,k=Math.floor(h);return a[k]+((a[k+1]??a[k])-a[k])*(h-k)};
+  return {at,ym,n:V.length,q:Object.fromEntries(HEX.map(([k])=>{const a=V.map(v=>v[k]).sort((x,y)=>x-y);return [k,HEX_Q.map(q=>a.length?Math.round(qt(a,q)*1000)/1000:0)]}))};
+}
+async function publishAgg(){
+  if(!confirm('담당 교수가 확인한 실적으로 실적 육각형의 학과 기준과 학과 결산을 새로 만들어 게시할까요?\n결산은 교수 이름 없이 모든 링크에서 보이고, 논문 제목 등은 그대로 나와요.')) return;
+  try{
+    await loadAll(); // 최신 검토 결과 기준
+    const at=new Date().getFullYear()+'.'+today(), bench=benchBuild(at,nowYM()), recap=recapBuild(at,nowYM());
+    if(!bench.n){render();toast('담당 교수가 확인한 실적이 아직 없어요');return}
+    await db.doc('config/app').set({bench,recap},{mergeFields:['bench','recap']});
+    S.data.bench=bench;S.data.recap=recap;render();toast(`게시했어요 (교수 ${bench.n}명 기준)`,4000);
+  }catch(e){fail(e);render()}
+}
+S.recapP='';
+function recapView(){
+  const R=S.data.recap; if(!R) return '<div class="empty">아직 게시된 결산이 없어요.</div>';
+  const ks=Object.keys(R.periods||{}), sem=ks.filter(k=>k.includes('-')).sort().reverse(), yr=ks.filter(k=>!k.includes('-')).sort().reverse();
+  const cur=ks.includes(S.recapP)?S.recapP:ks.includes(semOf(R.ym))?semOf(R.ym):(sem[0]||yr[0]||''), C=(R.periods||{})[cur]||{}, H=(R.hl||[]).filter(h=>periodsOf(h.ym).includes(cur)); // 기본 기간은 게시한 날이 속한 학기
+  const opt=k=>`<option value="${k}" ${k===cur?'selected':''}>${pLabel(k)}</option>`;
+  const tiles=RECAP_N.filter(([k])=>C[k]).map(([k,l,u])=>`<div class="tile"><b>${k==='gm'?won(C[k]):C[k].toLocaleString()+`<small>${u}</small>`}</b><span>${l}</span></div>`).join('');
+  const lists=RECAP_HL.map(([g,l,max])=>{let a=H.filter(h=>h.g===g).sort((x,y)=>x.o-y.o);if(max)a=a.slice(0,max);
+    return a.length?`<h3>${l} <span class="count">${a.length}</span></h3><div class="items">${a.map(h=>`<div class="item"><div style="min-width:0"><div class="t">${esc(h.t)}</div><div class="meta">${[h.s,ymText(h.ym)].filter(Boolean).map(x=>`<span>${esc(x)}</span>`).join('')}</div></div></div>`).join('')}</div>`:''}).join('');
+  return `<div class="panel recap"><div class="head"><div><h2>학과 결산 · ${cur?pLabel(cur):''}</h2><span class="msg">교수님들의 실적을 이름 없이 모았어요. 함께 축하해요!</span></div>
+      ${ks.length?`<select id="recap-p" style="width:auto" aria-label="결산 기간">${sem.length?`<optgroup label="학기">${sem.map(opt).join('')}</optgroup>`:''}${yr.length?`<optgroup label="연도">${yr.map(opt).join('')}</optgroup>`:''}</select>`:''}</div>
+    ${tiles?`<div class="tiles">${tiles}</div>`:'<div class="empty">이 기간에 확인된 실적이 없어요.</div>'}
+    ${lists}
+    <p class="msg" style="margin-top:18px">담당 교수가 확인한 실적만 셉니다 (${esc(R.at)} 게시). 여러 교수님이 함께한 논문·특허·과제는 한 번만 세고, 연구비 입금과 월이 없는 실적(교육 실적 등)은 연도 결산에만 나와요.</p>
   </div>`;
 }
 
@@ -674,7 +826,7 @@ function formHTML(c,f,id){
 function revHome(){
   if(!S.me.rev) return '<div class="empty">위에서 담당 교수를 고르세요.</div>';
   const mine=S.data.profs.filter(p=>p.rev===S.me.rev);
-  return `<div class="head"><h2>담당 교수님 ${mine.length}분</h2><span class="msg">마감 ${esc(S.data.deadline)}</span></div>
+  return `<div class="head"><h2>담당 교수님 ${mine.length}분</h2><span class="due">마감 ${esc(S.data.deadline)}</span></div>
   <div class="cards">${mine.map(p=>{const st=stats(p);return `<button class="pcard" data-open="${p.id}">
     <span class="n">${esc(p.name)} <span class="msg">${esc(p.type)}${p.rank?' · '+esc(p.rank):''}</span></span>
     <div class="prog"><i style="width:${st.done/CATS.length*100}%"></i></div>
@@ -685,14 +837,14 @@ function revHome(){
 
 function adminHome(){
   const P=S.data.profs;
-  if(!P.length) return `<div class="panel"><div class="head"><h2>시작하기</h2></div><p class="msg">아직 자료가 없어요. 아래에서 <b>초기 데이터(seed.json)</b>를 가져오세요. 교수님별 개인 링크도 함께 만들어져요.</p></div>${setupPanels()}`;
+  if(!P.length) return `<div class="panel"><div class="head"><h2>시작하기</h2></div><p class="msg">아직 자료가 없어요. 아래에서 <b>초기 데이터(seed.json)</b>를 가져오세요. 교수님별 개인 링크도 함께 만들어져요.</p></div>${linkPanel()}${setupPanels()}`;
   const rows=P.map(p=>{const st=stats(p);return `<tr class="click" data-open="${p.id}">
     <td>${esc(p.name)}</td><td>${esc(p.type)}</td><td class="num">${itemsOf(p.id,'roster').filter(i=>['재학','수료'].includes(i.f.status)).length}</td>
     <td><select data-assign="${p.id}" aria-label="${esc(p.name)} 담당 교수"><option value="">미배정</option>${S.data.reviewers.map(r=>`<option value="${r.id}" ${r.id===p.rev?'selected':''}>${esc(r.name)}</option>`).join('')}</select></td>
     <td class="num">${st.done}/${CATS.length}</td><td class="num">${st.n}</td><td class="num">${st.fix}</td><td class="num">${esc(p.updated||'—')}</td>
     <td><button class="btn ghost sm" data-delprof="${p.id}">삭제</button></td></tr>`}).join('');
   const tot=P.reduce((a,p)=>a+stats(p).done,0), all=P.length*CATS.length;
-  return `<div class="head"><h2>전체 진행 현황</h2><span class="msg">항목 확인 완료 ${tot} / ${all} · 마감 ${esc(S.data.deadline)}</span></div>
+  return `<div class="head"><h2>전체 진행 현황</h2><span class="msg">항목 확인 완료 ${tot} / ${all} · <span class="due">마감 ${esc(S.data.deadline)}</span></span></div>
   <div class="prog" style="margin-bottom:14px"><i style="width:${tot/all*100}%"></i></div>
   <div class="tablebox"><table><thead><tr><th>교수</th><th>기초/임상</th><th>재학·수료생</th><th>담당 교수</th><th>확인 완료</th><th>실적</th><th>수정 요청</th><th>최근 수정</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
   <div class="panel" style="margin-top:18px"><div class="head"><h2 style="font-size:17px">교수 추가</h2></div>
@@ -703,6 +855,7 @@ function adminHome(){
       <input id="np-rid" placeholder="연구자등록번호" style="max-width:150px" aria-label="연구자등록번호">
       <select id="np-rev" aria-label="담당 교수"><option value="">담당 교수 미배정</option>${S.data.reviewers.map(r=>`<option value="${r.id}">${esc(r.name)}</option>`).join('')}</select>
       <button class="btn primary" data-act="addprof">추가</button></div></div>
+  ${linkPanel()}
   <div class="panel" style="margin-top:18px"><div class="head"><h2 style="font-size:17px">담당 교수</h2></div>
     <p class="msg">담당 교수 권한을 주면 그 교수님 개인 링크에 "담당 교수 검토" 화면이 생겨요. 권한을 해제하면 맡던 교수님들은 미배정이 되니, 위 표에서 다시 배정해 주세요.</p>
     <div class="tablebox"><table><thead><tr><th>이름</th><th>맡은 교수</th><th></th></tr></thead><tbody>${S.data.reviewers.map(r=>`<tr><td>${esc(r.name)}</td><td class="num">${P.filter(p=>p.rev===r.id).length}명</td><td><button class="btn ghost sm" data-revoke="${r.id}">권한 해제</button></td></tr>`).join('')||'<tr><td colspan="3">없음</td></tr>'}</tbody></table></div>
@@ -720,18 +873,24 @@ function adminHome(){
     <select id="exp-cat" aria-label="복사할 항목">${CATS.map(c=>`<option value="${c.key}" ${c.key===S.exportCat?'selected':''}>${c.name}</option>`).join('')}</select>
     <button class="btn" data-act="copy">표 복사</button></div>
     ${S.tsv?`<textarea class="tsv" id="tsv" readonly>${esc(S.tsv)}</textarea>`:''}
-  </div>${setupPanels()}`;
+  </div>
+  <div class="panel" style="margin-top:18px"><div class="head"><h2 style="font-size:17px">실적 육각형 · 학과 결산</h2></div>
+    <p class="msg">담당 교수가 <b>확인</b>한 실적만으로 ① 실적 육각형의 학과 기준(6개 축별 10·25·50·75·90% 값)과 ② 학과 결산(연도·학기별 건수와 상위 실적)을 만들어 게시합니다. 결산은 <b>교수 이름 없이</b> 모든 링크의 <b>학과 결산</b> 탭에 보이고, 논문 제목 등은 그대로 나와요. 학기 말 검토가 끝난 뒤 눌러 주세요. 마지막 게시: <b>${esc((S.data.bench||{}).at||'없음')}</b></p>
+    <div class="export"><button class="btn primary" data-act="publish">집계 게시</button></div></div>${setupPanels()}`;
+}
+function linkPanel(){
+  return `<div class="panel" style="margin-top:18px"><div class="head"><h2 style="font-size:17px">개인 링크 · 관리자 권한</h2></div>
+    <p class="msg">링크를 가진 사람은 누구나 그 교수님 자료를 입력·수정할 수 있어요. 해당 교수님(과 입력을 맡은 학생)에게만 보내 주세요.</p>
+    <p class="msg">관리자 권한은 <b>여러 명</b>에게 줄 수 있어요. 권한을 바꾸고 싶으면 <b>링크 목록 보기</b>를 눌러서 바꿔 주세요.</p>
+    <div class="export"><button class="btn primary" data-act="links">링크 목록 보기</button>${S.links?'<button class="btn" data-act="copylinks">전체 복사 (이름·링크)</button>':''}</div>
+    ${S.links?`<div class="tablebox" style="margin-top:10px"><table><thead><tr><th>이름</th><th>권한</th><th>링크</th><th></th></tr></thead><tbody>${S.links.map(l=>`<tr><td>${esc(l.name)}</td><td>${esc(roleText(l))}</td><td class="mono" style="user-select:all;word-break:break-all">${esc(linkOf(l.id))}</td><td><button class="btn ghost sm" data-copy="${esc(linkOf(l.id))}">복사</button>${l.id===S.key?'<span class="msg">지금 쓰는 링크</span>':`<button class="btn ghost sm" data-admin="${l.id}" data-on="${l.admin?'':'1'}">${l.admin?'관리자 해제':'관리자 권한 주기'}</button>`}</td></tr>`).join('')}</tbody></table></div>`:''}
+    <div class="export" style="margin-top:12px"><input id="nk-name" placeholder="이름 (예: BK 사무국 ○○○)" style="max-width:220px" aria-label="새 링크 이름">
+      <select id="nk-role" aria-label="새 링크 권한"><option value="admin">관리자 (전체 보기·취합·링크 관리)</option>${S.data.profs.map(p=>`<option value="${p.id}">${esc(p.name)} 교수님 대신 입력</option>`).join('')}</select>
+      <button class="btn" data-act="newkey">링크 만들기</button></div></div>`;
 }
 function setupPanels(){
   return `<div class="panel" style="margin-top:18px"><div class="head"><h2 style="font-size:17px">마감일</h2></div>
     <div class="export"><input id="deadline" value="${esc(S.data.deadline)}" style="max-width:240px" aria-label="마감일"><button class="btn" data-act="deadline">저장</button></div></div>
-  <div class="panel" style="margin-top:18px"><div class="head"><h2 style="font-size:17px">개인 링크</h2></div>
-    <p class="msg">링크를 가진 사람은 누구나 그 교수님 자료를 입력·수정할 수 있어요. 해당 교수님(과 입력을 맡은 학생)에게만 보내 주세요.</p>
-    <div class="export"><button class="btn primary" data-act="links">링크 목록 보기</button>${S.links?'<button class="btn" data-act="copylinks">전체 복사 (이름·링크)</button>':''}</div>
-    ${S.links?`<div class="tablebox" style="margin-top:10px"><table><thead><tr><th>이름</th><th>권한</th><th>링크</th><th></th></tr></thead><tbody>${S.links.map(l=>`<tr><td>${esc(l.name)}</td><td>${esc(roleText(l))}</td><td class="mono" style="user-select:all;word-break:break-all">${esc(linkOf(l.id))}</td><td><button class="btn ghost sm" data-copy="${esc(linkOf(l.id))}">복사</button></td></tr>`).join('')}</tbody></table></div>`:''}
-    <div class="export" style="margin-top:12px"><input id="nk-name" placeholder="조교 이름" style="max-width:160px" aria-label="새 링크 이름">
-      <select id="nk-role" aria-label="새 링크 권한"><option value="admin">관리자 (전체 보기·취합)</option>${S.data.profs.map(p=>`<option value="${p.id}">${esc(p.name)} 교수님 대신 입력</option>`).join('')}</select>
-      <button class="btn" data-act="newkey">링크 만들기</button></div></div>
   <div class="panel" style="margin-top:18px"><div class="head"><h2 style="font-size:17px">증빙 파일 저장소 (구글 드라이브)</h2></div>
     <p class="msg">Apps Script 웹 앱 주소를 넣으면 실적마다 <b>증빙 첨부</b> 버튼이 생기고, 파일은 드라이브 <b>BK21_증빙/교수명/항목</b> 폴더에 저장돼요.</p>
     <div class="export"><input id="upurl" value="${esc(S.data.uploadUrl)}" placeholder="https://script.google.com/macros/s/…/exec" aria-label="업로드 주소"><button class="btn" data-act="upurl">저장</button></div></div>
@@ -782,6 +941,17 @@ const linkOf=k=>BASE_URL+'?k='+k;
 function roleText(l){const r=[];if(l.admin)r.push('관리자');if(l.prof)r.push('교수'+((prof(l.prof)||{}).name&&(prof(l.prof).name!==l.name)?' ('+prof(l.prof).name+' 대리)':''));if(l.rev)r.push('담당 교수');return r.join(' · ')||'—'}
 function newToken(){const a=new Uint8Array(16);crypto.getRandomValues(a);return btoa(String.fromCharCode(...a)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
 async function loadLinks(){try{const q=await db.collection('keys').get();S.links=q.docs.map(docOf).sort((a,b)=>a.name.localeCompare(b.name,'ko'))}catch(e){fail(e)}render()}
+async function setAdmin(id,on){
+  const l=(S.links||[]).find(x=>x.id===id); if(!l||id===S.key) return;
+  const only=!l.prof&&!l.rev; // 관리자 전용 링크는 권한을 빼면 쓸 데가 없으니 링크를 지운다
+  if(!on&&!confirm(only?`${l.name} 님의 관리자 링크를 삭제할까요?\n이 링크로는 더 이상 들어올 수 없어요.`:`${l.name} 님 링크에서 관리자 권한을 뺄까요?\n링크는 그대로 쓸 수 있고 관리자 화면만 사라져요.`)) return;
+  try{
+    if(on) await db.doc('keys/'+id).update({admin:true});
+    else if(only) await db.doc('keys/'+id).delete();
+    else await db.doc('keys/'+id).update({admin:firebase.firestore.FieldValue.delete()});
+    await loadLinks(); toast(on?l.name+' 님께 관리자 권한을 드렸어요':l.name+' 님의 관리자 권한을 해제했어요');
+  }catch(e){fail(e)}
+}
 async function newKey(){
   const name=$('#nk-name').value.trim(), r=$('#nk-role').value; if(!name){toast('이름을 넣어 주세요');$('#nk-name').focus();return}
   const t=newToken(), x=r==='admin'?{name,admin:true}:{name,prof:r};
@@ -1009,6 +1179,7 @@ document.addEventListener('click',async e=>{
   if(b.dataset.attach){S.attachFor=b.dataset.attach;const fp=$('#filepick');fp.value='';fp.click();return}
   if(b.dataset.unfile){await unfile(b.dataset.unfile,b.dataset.fid);return}
   if(b.dataset.revoke){await revokeRev(b.dataset.revoke);return}
+  if(b.dataset.admin){await setAdmin(b.dataset.admin,!!b.dataset.on);return}
   if(b.dataset.edit){S.editing=b.dataset.edit;render();return}
   if(b.dataset.del){
     if(!b.dataset.confirm){b.dataset.confirm=1;b.textContent='삭제 확인';b.classList.add('warn');return}
@@ -1019,6 +1190,7 @@ document.addEventListener('click',async e=>{
   const act=b.dataset.act;
   if(b.dataset.copy){try{await navigator.clipboard.writeText(b.dataset.copy);toast('링크를 복사했어요')}catch(_){toast('링크 칸을 눌러 선택한 뒤 복사해 주세요')}return}
   if(act==='refresh') await refresh();
+  if(act==='theme'){const t=curTheme()==='dark'?'light':'dark';document.documentElement.dataset.theme=t;try{localStorage.setItem('theme',t)}catch(er){}render()}
   if(act==='back'){S.open=null;S.cat='home';S.editing=null;await refresh()}
   if(act==='add'){S.editing='new';render();const f=document.querySelector('form.edit input,form.edit select');f&&f.focus()}
   if(act==='cancel'){S.editing=null;render()}
@@ -1036,6 +1208,7 @@ document.addEventListener('click',async e=>{
   if(act==='bulkassign') await bulkAssign();
   if(act==='jcrup') await jcrUpload();
   if(act==='jcrfill') await jcrFill();
+  if(act==='publish') await publishAgg();
   if(act==='upurl'){const v=$('#upurl').value.trim();if(v&&!/^https:\/\/script\.google\.com\/.+\/exec$/.test(v)){toast('…/exec 로 끝나는 Apps Script 주소를 넣어 주세요');return}
     try{await db.doc('config/app').set({uploadUrl:v},{merge:true});S.data.uploadUrl=v;toast(v?'업로드 주소를 저장했어요':'업로드를 껐어요')}catch(er){fail(er)}}
   if(act==='copylinks'){const t=S.links.map(l=>l.name+'\t'+linkOf(l.id)).join('\n');try{await navigator.clipboard.writeText(t);toast('복사했어요. 엑셀에 붙여 넣으세요')}catch(_){toast('복사하지 못했어요. 링크 칸을 직접 선택해 주세요')}}
@@ -1045,6 +1218,7 @@ document.addEventListener('change',async e=>{
   const t=e.target;
   if(t.id==='me-rev'){S.me.rev=t.value||null;S.open=null;await refresh();return}
   if(t.id==='flt'){S.filterFix=t.checked;render();return}
+  if(t.id==='recap-p'){S.recapP=t.value;render();return}
   if(t.id==='jcr-base'){try{await db.doc('config/app').set({jcrBase:t.value},{merge:true});S.data.jcrBase=t.value;toast(t.value?`기준 연도를 ${t.value} JCR로 정했어요. "논문 IF·JCR 채우기"를 누르면 반영돼요`:'기준 연도를 지웠어요',4000)}catch(er){fail(er)}return}
   if(t.id==='filepick'){const f=t.files[0];if(f&&S.attachFor)await uploadFile(S.attachFor,f);return}
   if(t.id==='rg-from'||t.id==='rg-to'){S.range[t.id==='rg-from'?'from':'to']=t.value;S.tsv='';return}
