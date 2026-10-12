@@ -12,8 +12,8 @@
 <style>
 /* Layout: app shell — top bar with role switch, left category rail + record list; stacks to one column on phones */
 :root{
-  --bg:#F4F5FB; --surface:#FFFFFF; --sunk:#EDEFFA; --line:#D8DBEE;
-  --ink:#1B1C34; --mute:#5A5E7A; --navy:#4338CA; --navy-soft:#E4E7FD;
+  --bg:#F5F6F8; --surface:#FFFFFF; --sunk:#EEF1F5; --line:#D9DEE6;
+  --ink:#1D2532; --mute:#5C6676; --navy:#1F3A5F; --navy-soft:#E6ECF4;
   --accent:#C9601F; --accent-soft:#FBEADF; --em:#A3440F;
   --ok:#2E7D5B; --ok-soft:#E1F2E9; --warn:#B23B3B; --warn-soft:#F8E3E3;
   --font:"IBM Plex Sans KR","Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif;
@@ -21,13 +21,13 @@
   --r:10px;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#11121F; --surface:#1A1B2D; --sunk:#151625; --line:#2C2E48;
-  --ink:#E5E6F3; --mute:#9EA1BC; --navy:#A5B4FC; --navy-soft:#272B55;
+  --bg:#121821; --surface:#1A222E; --sunk:#151C26; --line:#2C3747;
+  --ink:#E4E9F0; --mute:#9AA6B6; --navy:#8FB3E0; --navy-soft:#22324A;
   --accent:#F08A4B; --accent-soft:#3A2618; --em:#F5A06B;
   --ok:#6CC59A; --ok-soft:#1C3328; --warn:#F08A8A; --warn-soft:#3A2020; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#11121F; --surface:#1A1B2D; --sunk:#151625; --line:#2C2E48;
-  --ink:#E5E6F3; --mute:#9EA1BC; --navy:#A5B4FC; --navy-soft:#272B55;
+  --bg:#121821; --surface:#1A222E; --sunk:#151C26; --line:#2C3747;
+  --ink:#E4E9F0; --mute:#9AA6B6; --navy:#8FB3E0; --navy-soft:#22324A;
   --accent:#F08A4B; --accent-soft:#3A2618; --em:#F5A06B;
   --ok:#6CC59A; --ok-soft:#1C3328; --warn:#F08A8A; --warn-soft:#3A2020; color-scheme:dark}
 *{box-sizing:border-box}
@@ -54,6 +54,7 @@ textarea{min-height:84px;resize:vertical}
 .btn.ghost{border-color:transparent;background:none;color:var(--mute);padding:6px 8px}
 .btn.sm{padding:5px 10px;font-size:13px}
 .btn.ok{border-color:var(--ok);color:var(--ok)}
+.btn.round{width:36px;height:36px;padding:0;justify-content:center;border-radius:50%;background:var(--sunk);font-size:17px;line-height:1}
 .btn.warn{border-color:var(--warn);color:var(--warn)}
 .layout{display:grid;grid-template-columns:250px minmax(0,1fr);gap:24px;align-items:start}
 nav.cats{position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px);display:flex;flex-direction:column;gap:2px}
@@ -528,7 +529,7 @@ function render(){
   const who=$('#who');
   let sel='';
   if(S.role==='rev'&&isAdmin()) sel=`<select id="me-rev" aria-label="담당 교수 선택"><option value="">담당 교수 선택</option>${S.data.reviewers.map(r=>`<option value="${r.id}" ${r.id===S.me.rev?'selected':''}>${esc(r.name)}</option>`).join('')}</select>`;
-  who.innerHTML=`${sel}<span>${esc(S.name)}</span><button class="btn ghost sm" data-act="refresh">새로고침</button><button class="btn ghost sm" data-act="theme">${curTheme()==='dark'?'라이트 모드':'다크 모드'}</button>`;
+  who.innerHTML=`${sel}<span>${esc(S.name)}</span><button class="btn ghost sm" data-act="refresh">새로고침</button><button class="btn round" data-act="theme" aria-label="${curTheme()==='dark'?'라이트 모드로 바꾸기':'다크 모드로 바꾸기'}" title="${curTheme()==='dark'?'라이트 모드':'다크 모드'}">${curTheme()==='dark'?'☀️':'🌙'}</button>`;
   const app=$('#app');
   if(S.busy){app.innerHTML='<div class="empty">불러오는 중…</div>';return}
   if(S.role==='recap'){app.innerHTML=recapView();return}
