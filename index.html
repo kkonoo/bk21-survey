@@ -529,7 +529,7 @@ function render(){
   const who=$('#who');
   let sel='';
   if(S.role==='rev'&&isAdmin()) sel=`<select id="me-rev" aria-label="담당 교수 선택"><option value="">담당 교수 선택</option>${S.data.reviewers.map(r=>`<option value="${r.id}" ${r.id===S.me.rev?'selected':''}>${esc(r.name)}</option>`).join('')}</select>`;
-  who.innerHTML=`${sel}<span>${esc(S.name)}</span><button class="btn ghost sm" data-act="refresh">새로고침</button><button class="btn round" data-act="theme" aria-label="${curTheme()==='dark'?'라이트 모드로 바꾸기':'다크 모드로 바꾸기'}" title="${curTheme()==='dark'?'라이트 모드':'다크 모드'}">${curTheme()==='dark'?'☀️':'🌙'}</button>`;
+  who.innerHTML=`${sel}<span>${esc(S.name)}</span><button class="btn round" data-act="refresh" aria-label="새로고침" title="새로고침">↻</button><button class="btn round" data-act="theme" aria-label="${curTheme()==='dark'?'라이트 모드로 바꾸기':'다크 모드로 바꾸기'}" title="${curTheme()==='dark'?'라이트 모드':'다크 모드'}">${curTheme()==='dark'?'☀️':'🌙'}</button>`;
   const app=$('#app');
   if(S.busy){app.innerHTML='<div class="empty">불러오는 중…</div>';return}
   if(S.role==='recap'){app.innerHTML=recapView();return}
