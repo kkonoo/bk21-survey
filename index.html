@@ -876,12 +876,13 @@ function adminHome(){
 function setupPanels(){
   return `<div class="panel" style="margin-top:18px"><div class="head"><h2 style="font-size:17px">마감일</h2></div>
     <div class="export"><input id="deadline" value="${esc(S.data.deadline)}" style="max-width:240px" aria-label="마감일"><button class="btn" data-act="deadline">저장</button></div></div>
-  <div class="panel" style="margin-top:18px"><div class="head"><h2 style="font-size:17px">개인 링크</h2></div>
+  <div class="panel" style="margin-top:18px"><div class="head"><h2 style="font-size:17px">개인 링크 · 관리자 권한</h2></div>
     <p class="msg">링크를 가진 사람은 누구나 그 교수님 자료를 입력·수정할 수 있어요. 해당 교수님(과 입력을 맡은 학생)에게만 보내 주세요.</p>
+    <p class="msg">관리자 권한은 <b>여러 명</b>에게 줄 수 있어요. 교수님 링크에 권한을 주면 그 링크 하나로 내 실적과 관리자 화면을 함께 쓰고(예: 단장님), 교수가 아닌 분(예: BK 사무국)은 아래에서 <b>관리자</b> 링크를 새로 만들어 주세요. 지금 쓰고 있는 링크의 권한은 여기서 바꿀 수 없어요.</p>
     <div class="export"><button class="btn primary" data-act="links">링크 목록 보기</button>${S.links?'<button class="btn" data-act="copylinks">전체 복사 (이름·링크)</button>':''}</div>
-    ${S.links?`<div class="tablebox" style="margin-top:10px"><table><thead><tr><th>이름</th><th>권한</th><th>링크</th><th></th></tr></thead><tbody>${S.links.map(l=>`<tr><td>${esc(l.name)}</td><td>${esc(roleText(l))}</td><td class="mono" style="user-select:all;word-break:break-all">${esc(linkOf(l.id))}</td><td><button class="btn ghost sm" data-copy="${esc(linkOf(l.id))}">복사</button></td></tr>`).join('')}</tbody></table></div>`:''}
-    <div class="export" style="margin-top:12px"><input id="nk-name" placeholder="조교 이름" style="max-width:160px" aria-label="새 링크 이름">
-      <select id="nk-role" aria-label="새 링크 권한"><option value="admin">관리자 (전체 보기·취합)</option>${S.data.profs.map(p=>`<option value="${p.id}">${esc(p.name)} 교수님 대신 입력</option>`).join('')}</select>
+    ${S.links?`<div class="tablebox" style="margin-top:10px"><table><thead><tr><th>이름</th><th>권한</th><th>링크</th><th></th></tr></thead><tbody>${S.links.map(l=>`<tr><td>${esc(l.name)}</td><td>${esc(roleText(l))}</td><td class="mono" style="user-select:all;word-break:break-all">${esc(linkOf(l.id))}</td><td><button class="btn ghost sm" data-copy="${esc(linkOf(l.id))}">복사</button>${l.id===S.key?'<span class="msg">지금 쓰는 링크</span>':`<button class="btn ghost sm" data-admin="${l.id}" data-on="${l.admin?'':'1'}">${l.admin?'관리자 해제':'관리자 권한 주기'}</button>`}</td></tr>`).join('')}</tbody></table></div>`:''}
+    <div class="export" style="margin-top:12px"><input id="nk-name" placeholder="이름 (예: BK 사무국 ○○○)" style="max-width:220px" aria-label="새 링크 이름">
+      <select id="nk-role" aria-label="새 링크 권한"><option value="admin">관리자 (전체 보기·취합·링크 관리)</option>${S.data.profs.map(p=>`<option value="${p.id}">${esc(p.name)} 교수님 대신 입력</option>`).join('')}</select>
       <button class="btn" data-act="newkey">링크 만들기</button></div></div>
   <div class="panel" style="margin-top:18px"><div class="head"><h2 style="font-size:17px">증빙 파일 저장소 (구글 드라이브)</h2></div>
     <p class="msg">Apps Script 웹 앱 주소를 넣으면 실적마다 <b>증빙 첨부</b> 버튼이 생기고, 파일은 드라이브 <b>BK21_증빙/교수명/항목</b> 폴더에 저장돼요.</p>
@@ -933,6 +934,17 @@ const linkOf=k=>BASE_URL+'?k='+k;
 function roleText(l){const r=[];if(l.admin)r.push('관리자');if(l.prof)r.push('교수'+((prof(l.prof)||{}).name&&(prof(l.prof).name!==l.name)?' ('+prof(l.prof).name+' 대리)':''));if(l.rev)r.push('담당 교수');return r.join(' · ')||'—'}
 function newToken(){const a=new Uint8Array(16);crypto.getRandomValues(a);return btoa(String.fromCharCode(...a)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
 async function loadLinks(){try{const q=await db.collection('keys').get();S.links=q.docs.map(docOf).sort((a,b)=>a.name.localeCompare(b.name,'ko'))}catch(e){fail(e)}render()}
+async function setAdmin(id,on){
+  const l=(S.links||[]).find(x=>x.id===id); if(!l||id===S.key) return;
+  const only=!l.prof&&!l.rev; // 관리자 전용 링크는 권한을 빼면 쓸 데가 없으니 링크를 지운다
+  if(!on&&!confirm(only?`${l.name} 님의 관리자 링크를 삭제할까요?\n이 링크로는 더 이상 들어올 수 없어요.`:`${l.name} 님 링크에서 관리자 권한을 뺄까요?\n링크는 그대로 쓸 수 있고 관리자 화면만 사라져요.`)) return;
+  try{
+    if(on) await db.doc('keys/'+id).update({admin:true});
+    else if(only) await db.doc('keys/'+id).delete();
+    else await db.doc('keys/'+id).update({admin:firebase.firestore.FieldValue.delete()});
+    await loadLinks(); toast(on?l.name+' 님께 관리자 권한을 드렸어요':l.name+' 님의 관리자 권한을 해제했어요');
+  }catch(e){fail(e)}
+}
 async function newKey(){
   const name=$('#nk-name').value.trim(), r=$('#nk-role').value; if(!name){toast('이름을 넣어 주세요');$('#nk-name').focus();return}
   const t=newToken(), x=r==='admin'?{name,admin:true}:{name,prof:r};
@@ -1160,6 +1172,7 @@ document.addEventListener('click',async e=>{
   if(b.dataset.attach){S.attachFor=b.dataset.attach;const fp=$('#filepick');fp.value='';fp.click();return}
   if(b.dataset.unfile){await unfile(b.dataset.unfile,b.dataset.fid);return}
   if(b.dataset.revoke){await revokeRev(b.dataset.revoke);return}
+  if(b.dataset.admin){await setAdmin(b.dataset.admin,!!b.dataset.on);return}
   if(b.dataset.edit){S.editing=b.dataset.edit;render();return}
   if(b.dataset.del){
     if(!b.dataset.confirm){b.dataset.confirm=1;b.textContent='삭제 확인';b.classList.add('warn');return}
