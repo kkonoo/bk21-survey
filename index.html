@@ -580,8 +580,8 @@ function navHTML(p,mode){
     <button data-cat="home" aria-current="${S.cat==='home'}"><span class="dot ${CATS.every(c=>done[c.key])?'done':''}"></span><span>${mode==='prof'?'안내':'요약'}</span><span></span></button>
     ${CATS.map(c=>{const it=itemsOf(p.id,c.key);const fx=it.some(i=>i.rv.s==='fix');
       return `<button data-cat="${c.key}" aria-current="${S.cat===c.key}"><span class="dot ${fx?'fix':done[c.key]?'done':''}"></span><span>${c.name}</span><span class="count">${it.length}</span></button>`}).join('')}
-    ${promoOK(p,mode)?`<button data-cat="promo" class="promo-nav" aria-current="${S.cat==='promo'}"><span></span><span>승진 실적 (참고)</span><span></span></button>`:''}
     ${mode!=='rev'?`<button data-cat="hex" class="promo-nav" aria-current="${S.cat==='hex'}"><span></span><span>실적 육각형</span><span></span></button>`:''}
+    ${promoOK(p,mode)?`<button data-cat="promo" class="promo-nav" aria-current="${S.cat==='promo'}"><span></span><span>승진 실적 (참고)</span><span></span></button>`:''}
   </nav>`;
 }
 function profView(pid,mode){const p=prof(pid);if(!p)return '<div class="empty">교수 정보를 불러오지 못했어요.</div>';return `<div class="layout">${navHTML(p,mode)}<section>${S.cat==='home'||(S.cat==='promo'&&!promoOK(p,mode))||(S.cat==='hex'&&mode==='rev')?homePanel(p,mode):S.cat==='promo'?promoPanel(p):S.cat==='hex'?hexPanel(p):catPanel(p,CAT[S.cat],mode)}</section></div>`}
