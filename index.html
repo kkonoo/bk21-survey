@@ -205,6 +205,9 @@ textarea.tsv{font-family:var(--mono);font-size:12px;min-height:120px;margin-top:
 // 지도학생 과정은 묶음으로 보여준다 (선택 목록의 optgroup, 명단 정렬)
 const DEGREE_GROUPS=[['학부·예정',['학부연구생','학·석 연계과정','입학 예정 인턴']],['대학원',['석사','박사','석박통합']],['연구원',['박사후연구원']]];
 const OPT_GROUPS={degree:DEGREE_GROUPS};
+// 상태는 과정에 맞는 것만 (학부·대학원·인턴은 학생 상태, 박사후연구원은 계약 상태)
+const STATUS_OF=d=>d==='박사후연구원'?['계약 중','계약 종료']:['재학','휴학','수료','졸업','중단'];
+const STATUS_OLD={'학부 재학':'재학','입학 예정':'재학'}; // 예전 상태값은 읽을 때 바꿔 보여줌
 const FIELD_OPTS = {
   role: ['1저자','교신','공저자'],
   gtype: ['정부 (지자체 포함)','산업체 (국내)','해외기관'],
@@ -217,7 +220,6 @@ const FIELD_OPTS = {
   exkind: ['해외 기관 연수','외국 연구자 국내 방문 (온라인 포함)'],
   stukind: ['학회 발표 (국제)','학회 발표 (국내)','특허·기술이전·창업','수상 (교내)','수상 (교외·국내)','수상 (국제)','해외 연구실 공동연구 (15일 이상)'],
   degree: DEGREE_GROUPS.flatMap(g=>g[1]),
-  status: ['재학','수료','졸업','휴학','학부 재학','입학 예정','계약 중','계약 종료'],
   med: ['아니오','의예·의학과 재학','의대 졸업 (의사)'],
   career: ['취업','진학','창업','입대','미취업','기타'],
   dept: ['의과학과 대학원','타 학과 대학원'],
@@ -230,12 +232,12 @@ const CATS = [
     {k:'name',l:'이름',t:'text',req:1},
     {k:'sid',l:'학번',t:'text'},
     {k:'degree',l:'과정',t:'select',o:'degree',req:1},
-    {k:'status',l:'상태',t:'select',o:'status',req:1},
+    {k:'status',l:'상태',t:'select',of:f=>STATUS_OF(f.degree),req:1},
     {k:'bk',l:'BK 참여 (현재)',t:'yn'},
     {k:'admit',l:'입학·임용 연월',t:'text',ph:'2023.03'},
     {k:'grad',l:'졸업 연월',t:'text',ph:'2026.02'},
     {k:'foreign',l:'외국인',t:'yn'},
-    {k:'med',l:'의학 계열 (의사과학자 사업용)',t:'select',o:'med'},
+    {k:'med',l:'의학 계열',t:'select',o:'med'},
     {k:'ckind',l:'졸업 후 진로',t:'select',o:'career'},
     {k:'career',l:'진로 기관 · 직위',t:'text',full:1,ph:'한국뇌연구원 연수연구원'},
    ], title:f=>f.name+(f.sid?' · '+f.sid:''), meta:f=>[f.degree, f.status, f.admit&&('입학 '+f.admit), f.grad&&('졸업 '+f.grad), f.career], chips:f=>[f.bk==='예'&&['rep','BK 참여'], f.foreign==='예'&&['pre','외국인'], f.med&&f.med!=='아니오'&&['pre',f.med==='의대 졸업 (의사)'?'의사':'의대생'], f.status==='졸업'&&!f.ckind&&['fix','진로 미입력']]},
@@ -425,9 +427,9 @@ const EX = {
     {name:'Nguyen Van A',sid:'2023xxxxxx',degree:'석박통합',status:'재학',bk:'예',admit:'2023.09',foreign:'예'},
     {name:'이영희',sid:'2022xxxxxx',degree:'석사',status:'수료',bk:'예',admit:'2022.03',foreign:'아니오',med:'의대 졸업 (의사)'},
     {name:'박민수',degree:'박사후연구원',status:'계약 중',bk:'예',admit:'2025.03',foreign:'아니오'},
-    {name:'최지은',sid:'2022xxxxxx',degree:'학부연구생',status:'학부 재학',bk:'아니오',admit:'2025.01',foreign:'아니오',med:'의예·의학과 재학'},
-    {name:'정하늘',sid:'2023xxxxxx',degree:'학·석 연계과정',status:'학부 재학',bk:'아니오',admit:'2025.03',foreign:'아니오'},
-    {name:'오하나',degree:'입학 예정 인턴',status:'입학 예정',bk:'아니오',admit:'2026.07',foreign:'아니오',med:'아니오'},
+    {name:'최지은',sid:'2022xxxxxx',degree:'학부연구생',status:'재학',bk:'아니오',admit:'2025.01',foreign:'아니오',med:'의예·의학과 재학'},
+    {name:'정하늘',sid:'2023xxxxxx',degree:'학·석 연계과정',status:'재학',bk:'아니오',admit:'2025.03',foreign:'아니오'},
+    {name:'오하나',degree:'입학 예정 인턴',status:'재학',bk:'아니오',admit:'2026.07',foreign:'아니오',med:'아니오'},
   ],
   stu:[
     {student:'김철수',kind:'학회 발표 (국제)',date:'2025.10',title:'Society for Neuroscience 2025 포스터 발표 "Microglial aging ..."'},
@@ -484,7 +486,7 @@ function showNoKey(msg){
 /* ===== 데이터 읽기 ===== */
 const ROLE_OLD={'제1저자':'1저자','교신저자':'교신','기타저자':'공저자','1저자(공동)':'1저자','교신(공동)':'교신'};
 const ROLE_REDO=['공동 제1·교신','주저자 (제1/교신 미구분)'];
-const docOf=d=>{const x=Object.assign({id:d.id},d.data());if(x.cat==='paper'&&x.f&&ROLE_OLD[x.f.role])x.f.role=ROLE_OLD[x.f.role];if(x.cat==='roster'&&x.pre&&x.f&&x.f.bk===undefined)x.f.bk='예';return x};
+const docOf=d=>{const x=Object.assign({id:d.id},d.data());if(x.cat==='roster'&&x.f&&STATUS_OLD[x.f.status])x.f.status=STATUS_OLD[x.f.status];if(x.cat==='paper'&&x.f&&ROLE_OLD[x.f.role])x.f.role=ROLE_OLD[x.f.role];if(x.cat==='roster'&&x.pre&&x.f&&x.f.bk===undefined)x.f.bk='예';return x};
 async function loadCommon(){
   const [rv,cfg]=await Promise.all([db.collection('reviewers').get(),db.doc('config/app').get()]);
   S.data.reviewers=rv.docs.map(docOf).sort((a,b)=>a.id.localeCompare(b.id,undefined,{numeric:true}));
@@ -863,11 +865,11 @@ function itemHTML(i,c,mode){
   </div>`;
 }
 
-function fieldHTML(fd,v){
+function fieldHTML(fd,v,rec){
   const id='f-'+fd.k, req=fd.req?' <span class="req">*</span>':'';
   const lab=`<span>${esc(fd.l)}${req}</span>`;
   if(fd.t==='doi') return `<label class="full">${lab}<div class="row"><input id="${id}" name="${fd.k}" value="${esc(v)}" placeholder="10.xxxx/xxxxx" spellcheck="false"><button class="btn" type="button" data-act="doi">자동 채우기</button></div><span class="help" id="doi-msg">DOI를 넣고 누르면 제목·학술지·게재연월·권호·쪽·저자 수가 채워집니다.</span></label>`;
-  if(fd.t==='select') return `<label class="${fd.full?'full':''}">${lab}<select id="${id}" name="${fd.k}"><option value="">선택</option>${v&&!FIELD_OPTS[fd.o].includes(v)?`<option selected>${esc(v)}</option>`:''}${(()=>{const op=o=>`<option ${o===v?'selected':''}>${esc(o)}</option>`;return OPT_GROUPS[fd.o]?OPT_GROUPS[fd.o].map(([g,os])=>`<optgroup label="${g}">${os.map(op).join('')}</optgroup>`).join(''):FIELD_OPTS[fd.o].map(op).join('')})()}</select></label>`;
+  if(fd.t==='select'){const L=fd.of?fd.of(rec||{}):FIELD_OPTS[fd.o];return `<label class="${fd.full?'full':''}">${lab}<select id="${id}" name="${fd.k}"><option value="">선택</option>${v&&!L.includes(v)?`<option selected>${esc(v)}</option>`:''}${(()=>{const op=o=>`<option ${o===v?'selected':''}>${esc(o)}</option>`;return OPT_GROUPS[fd.o]?OPT_GROUPS[fd.o].map(([g,os])=>`<optgroup label="${g}">${os.map(op).join('')}</optgroup>`).join(''):L.map(op).join('')})()}</select></label>`}
   if(fd.t==='yn') return `<label class="${fd.full?'full':''}">${lab}<select id="${id}" name="${fd.k}"><option value="">선택</option>${['예','아니오'].map(o=>`<option ${o===v?'selected':''}>${o}</option>`).join('')}</select></label>`;
   if(fd.t==='area'){const n=(v||'').replace(/\s/g,'').length;return `<label class="full">${lab}<textarea id="${id}" name="${fd.k}" data-max="${fd.max}">${esc(v)}</textarea><span class="ctr ${n>fd.max?'over':''}" data-ctr="${fd.k}">${n} / ${fd.max}자 (공백 제외)</span></label>`}
   if(fd.t==='multi'){const cur=v||[];return `<div class="full" style="display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;color:var(--mute);font-weight:500">${lab}</span><div class="checks" id="${id}">${FIELD_OPTS[fd.o].map(o=>`<label><input type="checkbox" name="${fd.k}" value="${esc(o)}" ${cur.includes(o)?'checked':''}> ${esc(o)}</label>`).join('')}</div></div>`}
@@ -883,7 +885,7 @@ function topPick(c){
   return `<label class="full"><span>다른 실적에서 불러오기</span><select id="top-pick"><option value="">논문·특허 등에서 고르기 (대표 후보로 표시한 것이 위에 있어요)</option>${src.map(i=>`<option value="${i.id}">${i.f.rep==='예'?'[후보] ':''}[${i.cat==='paper'?'논문':esc(i.f.kind||'특허 등')}] ${esc(String(i.f.ym||i.f.date||'').slice(0,7)+' '+String(i.f.title||'').slice(0,80))}</option>`).join('')}</select><span class="help">고르면 종류·연도·업적이 채워지고, 써 둔 우수성이 있으면 설명 칸에 옮겨져요.</span></label>`;
 }
 function formHTML(c,f,id){
-  return `<form class="edit" data-cat="${c.key}" data-id="${id||''}" novalidate>${topPick(c)}${c.fields.map(fd=>fieldHTML(fd,f[fd.k])).join('')}<div class="bar"><span class="msg err" id="form-err"></span><button type="button" class="btn" data-act="cancel">취소</button><button class="btn primary" type="submit">저장</button></div></form>`}
+  return `<form class="edit" data-cat="${c.key}" data-id="${id||''}" novalidate>${topPick(c)}${c.fields.map(fd=>fieldHTML(fd,f[fd.k],f)).join('')}<div class="bar"><span class="msg err" id="form-err"></span><button type="button" class="btn" data-act="cancel">취소</button><button class="btn primary" type="submit">저장</button></div></form>`}
 
 function revHome(){
   if(!S.me.rev) return '<div class="empty">위에서 담당 교수를 고르세요.</div>';
@@ -901,7 +903,7 @@ function adminHome(){
   const P=S.data.profs;
   if(!P.length) return `<div class="panel"><div class="head"><h2>시작하기</h2></div><p class="msg">아직 자료가 없어요. 아래에서 <b>초기 데이터(seed.json)</b>를 가져오세요. 교수님별 개인 링크도 함께 만들어져요.</p></div>${linkPanel()}${setupPanels()}`;
   const rows=P.map(p=>{const st=stats(p);return `<tr class="click" data-open="${p.id}">
-    <td>${esc(p.name)}</td><td>${esc(p.type)}</td><td class="num">${itemsOf(p.id,'roster').filter(i=>['재학','수료'].includes(i.f.status)).length}</td>
+    <td>${esc(p.name)}</td><td>${esc(p.type)}</td><td class="num">${itemsOf(p.id,'roster').filter(i=>['재학','수료'].includes(i.f.status)&&!NONGRAD.includes(i.f.degree)).length}</td>
     <td><select data-assign="${p.id}" aria-label="${esc(p.name)} 담당 교수"><option value="">미배정</option>${S.data.reviewers.map(r=>`<option value="${r.id}" ${r.id===p.rev?'selected':''}>${esc(r.name)}</option>`).join('')}</select></td>
     <td class="num">${st.done}/${CATS.length}</td><td class="num">${st.n}</td><td class="num">${st.fix}</td><td class="num">${st.qw}</td><td class="num">${esc(p.updated||'—')}</td>
     <td><button class="btn ghost sm" data-delprof="${p.id}">삭제</button></td></tr>`}).join('');
@@ -1293,6 +1295,7 @@ document.addEventListener('change',async e=>{
   if(t.id==='me-rev'){S.me.rev=t.value||null;S.open=null;await refresh();return}
   if(t.id==='flt'){S.filterFix=t.checked;render();return}
   if(t.id==='recap-p'){S.recapP=t.value;render();return}
+  if(t.name==='degree'&&t.form&&t.form.elements.status){const st=t.form.elements.status,cur=st.value;st.innerHTML='<option value="">선택</option>'+STATUS_OF(t.value).map(o=>`<option ${o===cur?'selected':''}>${esc(o)}</option>`).join('');return}
   if(t.id==='jcr-base'){try{await db.doc('config/app').set({jcrBase:t.value},{merge:true});S.data.jcrBase=t.value;toast(t.value?`기준 연도를 ${t.value} JCR로 정했어요. "논문 IF·JCR 채우기"를 누르면 반영돼요`:'기준 연도를 지웠어요',4000)}catch(er){fail(er)}return}
   if(t.id==='filepick'){const f=t.files[0];if(f&&S.attachFor)await uploadFile(S.attachFor,f);return}
   if(t.id==='rg-from'||t.id==='rg-to'){S.range[t.id==='rg-from'?'from':'to']=t.value;S.tsv='';return}
