@@ -264,7 +264,7 @@ const CATS = [
     {k:'rep',l:'대표업적 후보로 추천',t:'yn'},
     {k:'merit',l:'대표업적 우수성 (후보일 때만)',t:'area',max:500,full:1},
    ], title:f=>f.title, meta:f=>[f.journal, f.ym, f.vol&&('Vol. '+f.vol), f.if&&('IF '+f.if+(f.jcr?' · 상위 '+f.jcr+'%':'')+' (출판 당시)'), f.if_cur&&('IF '+f.if_cur+(f.jcr_cur?' · 상위 '+f.jcr_cur+'%':'')+' (기준 '+(S.data.jcrBase||'')+')'), f.role, f.nauth&&('저자 '+f.nauth+'명'), f.doi&&('DOI '+f.doi)], chips:f=>[ROLE_REDO.includes(f.role)&&['fix','저자 역할 다시 선택'], f.rep==='예'&&['rep','대표 후보'], f.student&&['pre','학생 주저자: '+f.student], f.intl==='예'&&['pre','국제공동'], f.rep==='예'&&!f.merit&&['fix','우수성 미작성'], !f.jcr&&['fix','JCR 상위 % 미입력']]},
-  {key:'grant', name:'연구비', table:'3-1', rule:'2021.1 이후 수행 과제. 신청서는 <b>연도별 입금액</b>(입금일 기준)으로 1인당 수주액을 계산합니다. <b>공동연구원 참여 과제도</b> 입력해 주세요 (경북대 산단 입금분 또는 책임자 지분확인서로 인정). 산단을 거치지 않은 참여 과제는 위의 <b>지분확인서 양식</b>을 내려받아 연구책임자 확인·서명을 받은 뒤 증빙으로 올려 주세요. 교내 연구비·민간부담금 제외, 금액은 천원 단위.',
+  {key:'grant', name:'연구비', table:'3-1', rule:'2021.1 이후 수행 과제. 신청서는 <b>연도별 입금액</b>(입금일 기준)으로 1인당 수주액을 계산합니다. <b>공동연구원 참여 과제도</b> 입력해 주세요 (경북대 산단 입금분 또는 책임자 지분확인서로 인정). 산단을 거치지 않은 참여 과제는 과제마다 있는 <b>지분확인서</b> 버튼(과제 정보가 채워진 양식) 또는 위의 빈 양식으로 연구책임자 확인·서명을 받아 증빙으로 올려 주세요. 교내 연구비·민간부담금 제외, 금액은 천원 단위.',
    fields:[
     {k:'title',l:'과제명',t:'text',req:1,full:1},
     {k:'ministry',l:'주관부처 / 발주 기관',t:'text',req:1},
@@ -859,7 +859,7 @@ function itemHTML(i,c,mode){
     <div style="min-width:0"><div class="t">${esc(c.title(i.f)||'(제목 없음)')}</div>
       <div class="meta">${meta}</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"><span class="chip ${rv[0]}">${rv[1]}</span>${chips.map(x=>`<span class="chip ${x[0]}">${esc(x[1])}</span>`).join('')}</div></div>
-    <div class="acts">${mode!=='rev'?`${S.data.uploadUrl?`<button class="btn sm" data-attach="${i.id}">증빙 첨부</button>`:''}<button class="btn sm" data-edit="${i.id}">수정</button><button class="btn ghost sm" data-del="${i.id}">삭제</button>`:''}</div>
+    <div class="acts">${mode!=='rev'?`${i.cat==='grant'&&(i.f.grole==='공동연구원'||i.f.knu==='아니오')?`<button class="btn sm" data-shareform="${i.id}">지분확인서</button>`:''}${S.data.uploadUrl?`<button class="btn sm" data-attach="${i.id}">증빙 첨부</button>`:''}<button class="btn sm" data-edit="${i.id}">수정</button><button class="btn ghost sm" data-del="${i.id}">삭제</button>`:''}</div>
     ${(i.files||[]).length?`<div class="files"><span>증빙</span>${i.files.map(x=>`<span><a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.n)}</a>${mode!=='rev'?`<button class="btn ghost sm" data-unfile="${i.id}" data-fid="${esc(x.id)}" aria-label="${esc(x.n)} 연결 해제">×</button>`:''}</span>`).join('')}</div>`:''}
     ${i.memo?`<div class="note" style="color:var(--mute)">참고${i.pre&&i.cat==='paper'?' (중간평가 1차조사, 2025년 기준)':''}: ${esc(i.memo)}${i.cat==='paper'?` · JCR 상위 ${i.f.jcr?esc(i.f.jcr)+'%':'% 미입력'}`:''}</div>`:''}
     ${i.rv.s==='fix'&&mode==='prof'?`<div class="note">담당 교수 의견: ${esc(i.rv.c)}</div>`:''}
@@ -1093,6 +1093,27 @@ async function bulkAssign(){
   }catch(e){fail(e)}
 }
 
+/* ===== 연구비 지분확인서: 과제 정보를 채운 양식 (forms/share-confirmation-template.docx 의 {{칸}}을 바꿈) ===== */
+const PERIOD_BLANK='20      .      .      .    ~    20      .      .      .';
+async function shareForm(iid){
+  const it=S.data.items.find(x=>x.id===iid); if(!it) return; const f=it.f, p=prof(it.prof)||{};
+  try{
+    if(!window.JSZip) await new Promise((res,rej)=>{const sc=document.createElement('script');sc.src='vendor/jszip-3.10.1.min.js';sc.onload=res;sc.onerror=rej;document.head.appendChild(sc)});
+    const zip=await JSZip.loadAsync(await (await fetch('forms/share-confirmation-template.docx')).arrayBuffer());
+    const ymd=v=>{const m=String(v||'').match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/);return m?`${m[1]}. ${m[2].padStart(2,'0')}. ${m[3].padStart(2,'0')}.`:''};
+    const num=v=>{const n=parseFloat(v);return isNaN(n)?'':n.toLocaleString()};
+    const paid=f.paid||{}, sum=Object.values(paid).reduce((a,v)=>a+(parseFloat(v)||0),0);
+    const V={title:f.title,program:f.program,ministry:f.ministry,period:ymd(f.start)&&ymd(f.end)?ymd(f.start)+'   ~   '+ymd(f.end):PERIOD_BLANK,
+      total:num(f.total),name:p.name,rank:p.rank,share:f.share,psum:sum?sum.toLocaleString():''};
+    YEARS.forEach(y=>V['p'+y]=num(paid[y])); // 참여연구원 지분 칸에는 입력해 둔 연도별 입금액을 넣음 (연구책임자가 확인·수정)
+    const xml=(await zip.file('word/document.xml').async('string')).replace(/\{\{(\w+)\}\}/g,(_,k)=>esc(V[k]??''));
+    zip.file('word/document.xml',xml);
+    const blob=await zip.generateAsync({type:'blob',mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=('지분확인서_'+(p.name||'')+'_'+String(f.title||'').slice(0,30)+'.docx').replace(/[\\/:*?"<>|]/g,' ');
+    document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+  }catch(e){console.error(e);toast('양식을 만들지 못했어요. 잠시 뒤 다시 해 주세요')}
+}
+
 /* ===== 증빙 첨부 (구글 드라이브, Apps Script) ===== */
 async function uploadFile(iid,file){
   const it=S.data.items.find(x=>x.id===iid); if(!it||!file) return;
@@ -1242,6 +1263,7 @@ document.addEventListener('click',async e=>{
   if(b.dataset.open&&!e.target.closest('select')){S.open=b.dataset.open;S.cat='home';if(S.role==='rev'){S.busy=true;render();try{await loadProf(S.open)}catch(er){fail(er)}S.busy=false}render();return}
   const pid=curPid();
   if(b.dataset.delprof){await delProf(b.dataset.delprof);return}
+  if(b.dataset.shareform){await shareForm(b.dataset.shareform);return}
   if(b.dataset.attach){S.attachFor=b.dataset.attach;const fp=$('#filepick');fp.value='';fp.click();return}
   if(b.dataset.unfile){await unfile(b.dataset.unfile,b.dataset.fid);return}
   if(b.dataset.revoke){await revokeRev(b.dataset.revoke);return}
