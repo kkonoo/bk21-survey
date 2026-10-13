@@ -203,10 +203,10 @@ textarea.tsv{font-family:var(--mono);font-size:12px;min-height:120px;margin-top:
 <script>
 /* ===== 조사 항목 정의 ===== */
 // 지도학생 과정은 묶음으로 보여준다 (선택 목록의 optgroup, 명단 정렬)
-const DEGREE_GROUPS=[['학부·예정',['학부연구생','학·석 연계과정','입학 예정 인턴']],['대학원',['석사','박사','석박통합']],['연구원',['박사후연구원']]];
+const DEGREE_GROUPS=[['학부·예정',['학부연구생','학·석 연계과정','입학 예정 인턴']],['대학원',['석사','박사','석박통합']],['연구원',['박사후연구원','석사연구원','학사연구원']]];
 const OPT_GROUPS={degree:DEGREE_GROUPS};
-// 상태는 과정에 맞는 것만 (학부·대학원·인턴은 학생 상태, 박사후연구원은 계약 상태)
-const STATUS_OF=d=>d==='박사후연구원'?['계약 중','계약 종료']:['재학','휴학','수료','졸업','중단'];
+// 상태는 과정에 맞는 것만 (학부·대학원·인턴은 학생 상태, 연구원은 계약 상태)
+const STATUS_OF=d=>DEGREE_GROUPS.find(g=>g[0]==='연구원')[1].includes(d)?['계약 중','계약 종료']:['재학','휴학','수료','졸업','중단'];
 const STATUS_OLD={'학부 재학':'재학','입학 예정':'재학'}; // 예전 상태값은 읽을 때 바꿔 보여줌
 const MED_OLD={'의예·의학과 재학':'예','의대 졸업 (의사)':'예'}; // 의학 계열은 예/아니오로 (과정 칸으로 의대생·의사 구분)
 const FIELD_OPTS = {
@@ -227,7 +227,7 @@ const FIELD_OPTS = {
 };
 const YEARS = Array.from({length:Math.max(2026,new Date().getFullYear())-2020},(_,k)=>String(2021+k));
 const CATS = [
-  {key:'roster', name:'지도학생 및 연구원 명단', table:'첨부 2·3·4 · 2-2', rule:'<b>논문보다 먼저 입력해 주세요</b> — 논문 탭의 지도학생 주저자를 이 명단에서 고릅니다. 4단계 BK 참여학생은 미리 채워 두었으니 <b>졸업생 진로 확인</b>과 <b>박사후연구원·학부연구생 추가</b>부터 해 주세요.<br><b>2021년 이후</b> 지도한 학생 전원 (재학·수료·졸업), 박사후연구원, 그리고 연구실의 <b>학부연구생·학석 연계과정생</b> (5단계는 학·석·박 연계를 봅니다). <b>4단계 BK 참여학생 명단(2020.2–2026.2학기)</b>으로 미리 채웠으니 지금 명단에 없는 학생(졸업생의 <b>졸업 연월·진로</b>, 상태)을 고쳐 주시고, BK에 참여하지 않은 대학원생과 <b>박사후연구원·학부연구생·입학 예정 인턴</b>은 <b>+ 추가</b>로 넣어 주세요. 학생마다 <b>의학 계열</b>(의대생·의사 여부, 의사과학자 양성 사업용)도 골라 주세요. 학생 수가 장학금 규모와 참여교수 결정의 기준이 됩니다. <b>BK 참여 여부와 관계없이 모두 넣고</b>, 지금 BK 참여 중인지만 따로 표시해 주세요 (26.2학기 BK 참여 중인 학생은 \'예\'로 되어 있어요).',
+  {key:'roster', name:'지도학생 및 연구원 명단', table:'첨부 2·3·4 · 2-2', rule:'<b>논문보다 먼저 입력해 주세요</b> — 논문 탭의 지도학생 주저자를 이 명단에서 고릅니다. 4단계 BK 참여학생은 미리 채워 두었으니 <b>졸업생 진로 확인</b>과 <b>박사후연구원·학부연구생 추가</b>부터 해 주세요.<br><b>2021년 이후</b> 지도한 학생 전원 (재학·수료·졸업), 박사후연구원, 그리고 연구실의 <b>학부연구생·학석 연계과정생</b> (5단계는 학·석·박 연계를 봅니다). <b>4단계 BK 참여학생 명단(2020.2–2026.2학기)</b>으로 미리 채웠으니 지금 명단에 없는 학생(졸업생의 <b>졸업 연월·진로</b>, 상태)을 고쳐 주시고, BK에 참여하지 않은 대학원생과 <b>박사후연구원·연구원·학부연구생·입학 예정 인턴</b>은 <b>+ 추가</b>로 넣어 주세요. 학생마다 <b>의학 계열</b>(의대생·의사 여부, 의사과학자 양성 사업용)도 골라 주세요. 학생 수가 장학금 규모와 참여교수 결정의 기준이 됩니다. <b>BK 참여 여부와 관계없이 모두 넣고</b>, 지금 BK 참여 중인지만 따로 표시해 주세요 (26.2학기 BK 참여 중인 학생은 \'예\'로 되어 있어요).',
    fields:[
     {k:'name',l:'이름',t:'text',req:1},
     {k:'sid',l:'학번',t:'text'},
@@ -235,12 +235,12 @@ const CATS = [
     {k:'status',l:'상태',t:'select',of:f=>STATUS_OF(f.degree),req:1},
     {k:'bk',l:'BK 참여 (현재)',t:'yn'},
     {k:'admit',l:'입학·임용 연월',t:'text',ph:'2023.03'},
-    {k:'grad',l:'졸업 연월',t:'text',ph:'2026.02'},
+    {k:'grad',l:'졸업/중단/종료 연월',t:'text',ph:'2026.02'},
     {k:'foreign',l:'외국인',t:'yn'},
     {k:'med',l:'의학 계열',t:'yn'},
     {k:'ckind',l:'졸업 후 진로',t:'select',o:'career'},
     {k:'career',l:'진로 기관 · 직위',t:'text',full:1,ph:'한국뇌연구원 연수연구원'},
-   ], title:f=>f.name+(f.sid?' · '+f.sid:''), meta:f=>[f.degree, f.status, f.admit&&('입학 '+f.admit), f.grad&&('졸업 '+f.grad), f.career], chips:f=>[f.bk==='예'&&['rep','BK 참여'], f.foreign==='예'&&['pre','외국인'], f.med==='예'&&['pre','의학 계열'], f.status==='졸업'&&!f.ckind&&['fix','진로 미입력']]},
+   ], title:f=>f.name+(f.sid?' · '+f.sid:''), meta:f=>[f.degree, f.status, f.admit&&('입학 '+f.admit), f.grad&&((f.status==='중단'?'중단 ':f.status==='계약 종료'?'종료 ':'졸업 ')+f.grad), f.career], chips:f=>[f.bk==='예'&&['rep','BK 참여'], f.foreign==='예'&&['pre','외국인'], f.med==='예'&&['pre','의학 계열'], f.status==='졸업'&&!f.ckind&&['fix','진로 미입력']]},
   {key:'paper', name:'논문', table:'3-2 · 3-3', rule:'<b>2021.1 이후</b> 게재된 SCI(E)·SSCI·A&HCI·등재(후보)·Scopus 논문 전체 (경북대 소속 표기, 권·호·쪽이 있는 논문). DOI만 넣고 <b>자동 채우기</b>를 누르세요. <b>IF와 JCR 상위 %를 S2Journal·JCR에서 확인해 넣어 주세요</b> (참고 칸의 IF는 중간평가 1차조사 값, 2025년 기준) (출판 당시: 7–12월 출판은 전년도, 1–6월 출판은 전전년도 JCR). 신청서는 <b>대표업적 1인당 3건</b>(정성 70%)과 <b>전체 논문</b>(정량 30%)을 함께 봅니다.',
    fields:[
     {k:'doi',l:'DOI',t:'doi',req:1,full:1},
@@ -655,7 +655,7 @@ function promoPanel(p){
 const HEX=[['paper','논문','편/년'],['grant','연구비','백만원/년'],['ind','산학·사회','점/년'],['stu','학생지도','점'],['edu','교육','점/년'],['intl','국제화','점/년']];
 const HEX_Q=[10,25,50,75,90];
 const IPW={기술이전:2,창업:2}; // 나머지(등록특허·저서)는 1점
-const NONGRAD=['박사후연구원','학부연구생','학·석 연계과정','입학 예정 인턴'];
+const NONGRAD=DEGREE_GROUPS.filter(g=>g[0]!=='대학원').flatMap(g=>g[1]); // 대학원생이 아닌 과정 (학부·예정, 연구원)
 const nowYM=()=>{const d=new Date();return d.getFullYear()*100+d.getMonth()+1};
 const ymText=ym=>Math.floor(ym/100)+(ym%100?'.'+String(ym%100).padStart(2,'0'):'');
 function hexRaw(p,end){
@@ -729,7 +729,7 @@ const RECAP_HL=[['paper','JCR 상위 10% 논문',0],['grant','신규 연구과�
 function recapBuild(at,ym0){
   const P={}, hl=[], seen=new Set(), nk=s=>String(s||'').toLowerCase().replace(/[^0-9a-z가-힣]/g,'');
   const add=(ym,k,n)=>periodsOf(ym).forEach(p=>{const c=P[p]=P[p]||{};c[k]=(c[k]||0)+(n==null?1:n)});
-  const dup=(c,key)=>{if(!key)return false;key=c+'|'+key;if(seen.has(key))return true;seen.add(key);return false}; // 여러 교수가 함께한 논문·특허·과제는 한 번만
+  const dup=(c,key)=>{if(!key)return false;key=c+'|'+key;if(seen.has(key))return true;seen.add(key);return false}; // 여러 교수가 함께한 논문·특허·과제, 공동지도 학생은 한 번만
   S.data.items.filter(i=>i.rv.s==='ok').forEach(i=>{const f=i.f, ym=dkey(i);
     if(i.cat==='paper'&&!dup('paper',nk(f.doi)||nk(f.title))){const j=parseFloat(f.jcr);add(ym,'p');if(f.intl==='예')add(ym,'pi');
       if(j<=10){add(ym,'p10');hl.push({g:'paper',ym,t:f.title||'',s:[f.journal,'JCR 상위 '+j+'%',f.student&&'학생 주저자'].filter(Boolean).join(' · '),o:j})}}
@@ -737,8 +737,8 @@ function recapBuild(at,ym0){
       if(!dup('grant',nk(f.title))){add(ym,'g');if(f.grole==='연구책임자'){const t=parseFloat(f.total)||0;hl.push({g:'grant',ym,t:f.title||'',s:[f.ministry,f.program,t&&won(t)].filter(Boolean).join(' · '),o:-t})}}}
     if(i.cat==='ip'&&!dup('ip',f.kind+nk(f.title))){const k={등록특허:'pat',기술이전:'tt',창업:'su',저서:'bk'}[f.kind];if(k)add(ym,k);
       if(f.kind==='기술이전'||f.kind==='창업')hl.push({g:'tech',ym,t:f.title||'',s:[f.kind,parseFloat(f.amount)>0&&won(f.amount)].filter(Boolean).join(' · '),o:-ym})}
-    if(i.cat==='roster'&&f.status==='졸업'){const g=ymOf(f.grad);if(f.degree==='석사')add(g,'ms');else if(['박사','석박통합'].includes(f.degree))add(g,'phd')}
-    if(i.cat==='stu'){if(/^수상/.test(f.kind||'')){add(ym,'sa');hl.push({g:'award',ym,t:f.title||'',s:'지도학생 '+f.kind,o:-ym})}if(f.kind==='학회 발표 (국제)')add(ym,'si')}
+    if(i.cat==='roster'&&f.status==='졸업'&&!dup('grad',nk(f.sid)||nk(f.name)+f.degree)){const g=ymOf(f.grad);if(f.degree==='석사')add(g,'ms');else if(['박사','석박통합'].includes(f.degree))add(g,'phd')}
+    if(i.cat==='stu'&&!dup('stu',nk(f.student)+f.kind+nk(f.title))){if(/^수상/.test(f.kind||'')){add(ym,'sa');hl.push({g:'award',ym,t:f.title||'',s:'지도학생 '+f.kind,o:-ym})}if(f.kind==='학회 발표 (국제)')add(ym,'si')}
     if(i.cat==='intl'){if(f.kind==='국제학회 수상'){add(ym,'ia');hl.push({g:'award',ym,t:f.content||f.event||'',s:f.content?f.event||'':'',o:-ym})}
       if(f.kind==='초청강연'||f.kind==='기조연설'){add(ym,'it');hl.push({g:'talk',ym,t:f.content||f.event||'',s:[f.kind,f.content&&f.event,f.place].filter(Boolean).join(' · '),o:-ym})}}
     if(i.cat==='edu'){add(ym,'ed');if(f.kind==='교육 수상 (교외)')hl.push({g:'award',ym,t:f.title||'',s:'교육 수상',o:-ym})}
@@ -787,7 +787,7 @@ function recapView(){
       ${ks.length?`<select id="recap-p" style="width:auto" aria-label="결산 기간">${sem.length?`<optgroup label="학기">${sem.map(opt).join('')}</optgroup>`:''}${yr.length?`<optgroup label="연도">${yr.map(opt).join('')}</optgroup>`:''}</select>`:''}</div>
     ${tiles?`<div class="tiles">${tiles}</div>`:'<div class="empty">이 기간에 확인된 실적이 없어요.</div>'}
     ${lists}
-    <p class="msg" style="margin-top:18px">담당 교수가 확인한 실적만 셉니다 (${esc(R.at)} 게시). 여러 교수님이 함께한 논문·특허·과제는 한 번만 세고, 연구비 입금과 월이 없는 실적(교육 실적 등)은 연도 결산에만 나와요.</p>
+    <p class="msg" style="margin-top:18px">담당 교수가 확인한 실적만 셉니다 (${esc(R.at)} 게시). 여러 교수님이 함께한 논문·특허·과제와 공동지도 학생은 한 번만 세고, 연구비 입금과 월이 없는 실적(교육 실적 등)은 연도 결산에만 나와요.</p>
   </div>`;
 }
 
