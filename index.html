@@ -109,6 +109,14 @@ details.ex summary{cursor:pointer;color:var(--navy);font-weight:600;font-size:14
 .item{border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 14px}
 .item.fix{border-color:var(--warn);background:var(--warn-soft)}
 .item .t{font-weight:600}
+.item .tbtn{background:none;border:0;padding:0;margin:0;font:inherit;font-weight:600;color:inherit;text-align:left;cursor:pointer;display:inline-flex;gap:6px;align-items:center}
+.item .tbtn:hover{text-decoration:underline}
+.item .caret{flex:none;width:7px;height:7px;border-right:2px solid var(--mute);border-bottom:2px solid var(--mute);transform:rotate(-45deg) translateY(-2px);margin-right:3px}
+.item .tbtn[aria-expanded="true"] .caret{transform:rotate(45deg) translate(-2px,-2px)}
+.detail{grid-column:1/-1;display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 16px;margin:4px 0 0;padding:10px 14px;background:var(--sunk);border-radius:8px;font-size:13.5px}
+.detail dt{color:var(--mute)}
+.detail dd{margin:0;white-space:pre-wrap;word-break:break-word}
+.detail dd.none{color:var(--mute)}
 .item .meta{color:var(--mute);font-size:13.5px;display:flex;flex-wrap:wrap;gap:4px 14px}
 .item .meta .mono{font-family:var(--mono);font-size:12.5px}
 .item .acts{display:flex;gap:4px;align-items:flex-start}
@@ -850,16 +858,24 @@ function exHTML(c){return EX[c.key].map(f=>{
   const chips=(c.chips(f)||[]).filter(x=>x&&x[0]!=='fix');
   return `<div class="item ex"><div style="min-width:0"><div class="t">${esc(c.title(f))}</div><div class="meta">${meta}</div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"><span class="chip rep">예시 · 가상 자료</span>${chips.map(x=>`<span class="chip ${x[0]}">${esc(x[1])}</span>`).join('')}</div></div></div>`}).join('')}
+S.expanded=new Set();
+function detailHTML(i,c){ // 입력한 모든 칸을 라벨과 함께 (빈 칸은 —)
+  const val=(fd,v)=>{if(fd.t==='multi')return (v||[]).join(', ');if(fd.t==='years')return YEARS.filter(y=>(v||{})[y]).map(y=>y+': '+(Number(v[y])||v[y]).toLocaleString()).join(' · ');
+    if(fd.t==='number'&&v!==''&&v!=null&&!isNaN(v))return Number(v).toLocaleString();return v==null?'':String(v)};
+  return `<dl class="detail">${c.fields.map(fd=>{const v=val(fd,i.f[fd.k]);return `<dt>${esc(fd.l)}</dt><dd class="${v?'':'none'}">${v?esc(v):'—'}</dd>`}).join('')}</dl>`;
+}
 function itemHTML(i,c,mode){
   const chips=(c.chips(i.f)||[]).filter(Boolean);
   if(i.pre) chips.unshift(['pre','1차조사']);
   const rv=i.rv.s==='ok'?['ok','검토 확인']:i.rv.s==='fix'?['fix','수정 요청']:['','검토 전'];
   const meta=c.meta(i.f).filter(Boolean).map(m=>`<span class="${/^DOI/.test(m)?'mono':''}">${esc(m)}</span>`).join('');
+  const open=S.expanded.has(i.id);
   return `<div class="item ${i.rv.s==='fix'?'fix':''}">
-    <div style="min-width:0"><div class="t">${esc(c.title(i.f)||'(제목 없음)')}</div>
+    <div style="min-width:0"><div class="t"><button class="tbtn" data-expand="${i.id}" aria-expanded="${open}"><span class="caret" aria-hidden="true"></span>${esc(c.title(i.f)||'(제목 없음)')}</button></div>
       <div class="meta">${meta}</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"><span class="chip ${rv[0]}">${rv[1]}</span>${chips.map(x=>`<span class="chip ${x[0]}">${esc(x[1])}</span>`).join('')}</div></div>
     <div class="acts">${mode!=='rev'?`${i.cat==='grant'&&(i.f.grole==='공동연구원'||i.f.knu==='아니오')?`<button class="btn sm" data-shareform="${i.id}">지분확인서</button>`:''}${S.data.uploadUrl?`<button class="btn sm" data-attach="${i.id}">증빙 첨부</button>`:''}<button class="btn sm" data-edit="${i.id}">수정</button><button class="btn ghost sm" data-del="${i.id}">삭제</button>`:''}</div>
+    ${open?detailHTML(i,c):''}
     ${(i.files||[]).length?`<div class="files"><span>증빙</span>${i.files.map(x=>`<span><a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.n)}</a>${mode!=='rev'?`<button class="btn ghost sm" data-unfile="${i.id}" data-fid="${esc(x.id)}" aria-label="${esc(x.n)} 연결 해제">×</button>`:''}</span>`).join('')}</div>`:''}
     ${i.memo?`<div class="note" style="color:var(--mute)">참고${i.pre&&i.cat==='paper'?' (중간평가 1차조사, 2025년 기준)':''}: ${esc(i.memo)}${i.cat==='paper'?` · JCR 상위 ${i.f.jcr?esc(i.f.jcr)+'%':'% 미입력'}`:''}</div>`:''}
     ${i.rv.s==='fix'&&mode==='prof'?`<div class="note">담당 교수 의견: ${esc(i.rv.c)}</div>`:''}
@@ -1268,6 +1284,7 @@ document.addEventListener('click',async e=>{
   if(b.dataset.unfile){await unfile(b.dataset.unfile,b.dataset.fid);return}
   if(b.dataset.revoke){await revokeRev(b.dataset.revoke);return}
   if(b.dataset.admin){await setAdmin(b.dataset.admin,!!b.dataset.on);return}
+  if(b.dataset.expand){const id=b.dataset.expand;S.expanded.has(id)?S.expanded.delete(id):S.expanded.add(id);render();return}
   if(b.dataset.edit){S.editing=b.dataset.edit;render();return}
   if(b.dataset.del){
     if(!b.dataset.confirm){b.dataset.confirm=1;b.textContent='삭제 확인';b.classList.add('warn');return}
