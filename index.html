@@ -1244,11 +1244,16 @@ async function rosterAdd(){
     const keys=(pid,v)=>{const s=String(v||''),h=s.replace(/[^가-힣]/g,''),l=s.replace(/[^A-Za-z]/g,'').toLowerCase();return [h&&pid+'|h|'+h,l&&pid+'|l|'+l].filter(Boolean)};
     await loadAll(); // 최신 명단 기준으로 중복 확인
     const have=new Set(S.data.items.filter(i=>i.cat==='roster').flatMap(i=>keys(i.prof,i.f.name)));
-    const add=[],skip=[],noProf=[];
-    (d.students||[]).forEach(x=>{const k=keys(x.prof,x.f&&x.f.name);
+    const add=[],skip=[],noProf=[], pidOf=v=>prof(v)?v:(S.data.profs.find(p=>p.name===v)||{}).id; // 교수는 번호 대신 이름으로 적어도 됨
+    let copied=0;
+    (d.students||[]).map(x0=>{const x=Object.assign({},x0,{prof:pidOf(x0.prof)});
+      // copyFrom: 공동지도 교수 명단에 같은 이름의 학생이 있으면 그 정보(학번·입학 연월 등)를 그대로 가져옴
+      const src=x0.copyFrom&&x0.f&&S.data.items.find(i=>i.cat==='roster'&&i.prof===pidOf(x0.copyFrom)&&i.f.name===x0.f.name);
+      if(src){x.f=Object.assign({},x0.f,src.f);x.memo=[src.memo,x0.memo].filter(Boolean).join(' · ');copied++}
+      return x}).forEach(x=>{const k=keys(x.prof,x.f&&x.f.name);
       if(!prof(x.prof)||!k.length)noProf.push(x); else if(k.some(z=>have.has(z)))skip.push(x); else{k.forEach(z=>have.add(z));add.push(x)}});
     if(!add.length){msg.textContent=`추가할 학생이 없어요 (이미 있음 ${skip.length}명).`;return}
-    if(!confirm(`${add.length}명을 새로 추가합니다. 이미 있는 ${skip.length}명은 건너뜁니다.${noProf.length?` 교수 정보가 없는 ${noProf.length}건도 건너뜁니다.`:''} 계속할까요?`))return;
+    if(!confirm(`${add.length}명을 새로 추가합니다.${copied?` (공동지도 교수 명단에서 정보를 가져온 학생 ${copied}명)`:''} 이미 있는 ${skip.length}명은 건너뜁니다.${noProf.length?` 교수 정보가 없는 ${noProf.length}건도 건너뜁니다.`:''} 계속할까요?`))return;
     msg.textContent='저장 중…';
     for(let k=0;k<add.length;k+=400){const b=db.batch();
       add.slice(k,k+400).forEach(x=>b.set(db.collection('items').doc(),{prof:x.prof,cat:'roster',pre:1,f:x.f,memo:x.memo||'',rv:{s:'none',c:''},updatedAt:TS()}));
