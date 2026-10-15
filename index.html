@@ -246,6 +246,9 @@ const FIELD_OPTS = {
   toptype: ['논문','특허','저서','기술이전','기타'],
 };
 const YEARS = Array.from({length:Math.max(2026,new Date().getFullYear())-2020},(_,k)=>String(2021+k));
+// 연구비 연도별 입금액 칸: 시작~종료 연도 중 2021년부터 올해까지 (이미 값이 있는 연도는 범위 밖이어도 남김)
+const yearsOf=(f,cur)=>{const now=new Date().getFullYear(),a=Math.max(2021,parseInt(f.start)||2021),b=Math.min(now,parseInt(f.end)||now),ys=[];for(let y=a;y<=b;y++)ys.push(String(y));return [...new Set([...ys,...Object.keys(cur||{}).filter(y=>cur[y])])].sort()};
+const yearBoxes=(k,f,cur)=>yearsOf(f,cur).map(y=>`<label>${y}<input type="number" name="${k}.${y}" value="${esc(cur[y]||'')}" inputmode="numeric"></label>`).join('')||'<span class="help">시작 연도가 되면 칸이 생겨요</span>';
 const CATS = [
   {key:'roster', name:'지도학생 및 연구원 명단', table:'첨부 2·3·4 · 2-2', rule:'<b>논문보다 먼저 입력해 주세요</b> — 논문 탭의 지도학생 주저자를 이 명단에서 고릅니다. 4단계 BK 참여학생은 미리 채워 두었으니 <b>졸업생 진로 확인</b>과 <b>박사후연구원·학부연구생 추가</b>부터 해 주세요.<br><b>2021년 이후</b> 지도한 학생 전원 (재학·수료·졸업), 박사후연구원, 그리고 연구실의 <b>학부연구생·학석 연계과정생</b> (5단계는 학·석·박 연계를 봅니다). <b>4단계 BK 참여학생 명단(2020.2–2026.2학기)</b>으로 미리 채웠으니 지금 명단에 없는 학생(졸업생의 <b>졸업 연월·진로</b>, 상태)을 고쳐 주시고, BK에 참여하지 않은 대학원생과 <b>박사후연구원·연구교수·연구원·학부연구생·입학 예정 인턴</b>은 <b>+ 추가</b>로 넣어 주세요. 우리 대학원에 들어올 예정이면 (석사를 마친 경우도) <b>입학 예정 인턴</b>, 입학 계획 없이 계약해 일하면 <b>석사·학사연구원</b>으로 넣어 주세요. 학생마다 <b>의학 계열</b>(의대생·의사 여부, 의사과학자 양성 사업용)도 골라 주세요. 학생 수가 장학금 규모와 참여교수 결정의 기준이 됩니다. <b>BK 참여 여부와 관계없이 모두 넣고</b>, 지금 BK 참여 중인지만 따로 표시해 주세요 (26.2학기 BK 참여 중인 학생은 \'예\'로 되어 있어요).',
    fields:[
@@ -785,7 +788,8 @@ async function publishAgg(){
 /* ===== 건의사항 게시판 (모든 링크에서 보고 쓰기, 관리자가 답글·삭제) ===== */
 async function loadBoard(){const q=await safe(db.collection('board'));S.data.board=q.docs.map(docOf).sort((a,b)=>ms(b.at)-ms(a.at))}
 const CHANGELOG=[
-  ['2026.10.15',["입학 예정 인턴의 상태는 학부 재학 · 학부 휴학 · 학사 졸업 · 석사 졸업 · 인턴 종료 중에서 골라요. 우리 대학원에 들어올 예정이면 석사를 마친 경우도 입학 예정 인턴이에요. 상태가 과정과 맞지 않으면 '상태 다시 선택'이 떠요",
+  ['2026.10.15',['연구비: 연도별 입금액 칸이 시작일·종료일에 맞춰 나와요 (올해까지만, 해가 바뀌면 칸이 늘어나요)',
+    "입학 예정 인턴의 상태는 학부 재학 · 학부 휴학 · 학사 졸업 · 석사 졸업 · 인턴 종료 중에서 골라요. 우리 대학원에 들어올 예정이면 석사를 마친 경우도 입학 예정 인턴이에요. 상태가 과정과 맞지 않으면 '상태 다시 선택'이 떠요",
     "지도학생 및 연구원 명단의 과정에 '연구교수'를 추가했어요 (박사후연구원으로 넣어 두셨다면 바꿔 주세요)",
     "'작성 예시'는 참고용 가상 자료라 수정할 수 없다고 적어 두었어요",
     '논문 \'지도학생 주저자\'를 여러 명 고를 수 있어요 (학생 공동 주저자)',
@@ -913,7 +917,7 @@ S.expanded=new Set();
 S.fold={}; // 관리자 화면의 접는 칸 (data-fold 이름 → 펼침 여부)
 const fold=k=>`data-fold="${k}" ${S.fold[k]?'open':''}`;
 function detailHTML(i,c){ // 입력한 모든 칸을 라벨과 함께 (빈 칸은 —)
-  const val=(fd,v)=>{if(fd.t==='multi')return (v||[]).join(', ');if(fd.t==='years')return YEARS.filter(y=>(v||{})[y]).map(y=>y+': '+(Number(v[y])||v[y]).toLocaleString()).join(' · ');
+  const val=(fd,v)=>{if(fd.t==='multi')return (v||[]).join(', ');if(fd.t==='years')return Object.keys(v||{}).filter(y=>v[y]).sort().map(y=>y+': '+(Number(v[y])||v[y]).toLocaleString()).join(' · ');
     if(fd.t==='number'&&v!==''&&v!=null&&!isNaN(v))return Number(v).toLocaleString();return v==null?'':String(v)};
   return `<dl class="detail">${c.fields.map(fd=>{const v=val(fd,i.f[fd.k]);return `<dt>${esc(fd.l)}</dt><dd class="${v?'':'none'}">${v?esc(v):'—'}</dd>`}).join('')}</dl>`;
 }
@@ -947,7 +951,7 @@ function fieldHTML(fd,v,rec){
   if(fd.t==='multi'){const cur=v||[];return `<div class="full" style="display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;color:var(--mute);font-weight:500">${lab}</span><div class="checks" id="${id}">${FIELD_OPTS[fd.o].map(o=>`<label><input type="checkbox" name="${fd.k}" value="${esc(o)}" ${cur.includes(o)?'checked':''}> ${esc(o)}</label>`).join('')}</div></div>`}
   if(fd.t==='student'&&fd.multi){const cur=(v||'').split(', ').filter(Boolean),names=[...new Set([...itemsOf(curPid(),'roster').map(i=>i.f.name),...cur])];return `<div class="full" style="display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;color:var(--mute);font-weight:500">${lab}</span><div class="checks" id="${id}">${names.map(n=>`<label><input type="checkbox" name="${fd.k}" value="${esc(n)}" ${cur.includes(n)?'checked':''}> ${esc(n)}</label>`).join('')}</div><span class="help">${names.length?'지도학생 및 연구원 명단에서 고릅니다. 공동 주저자면 모두 체크해 주세요':'지도학생 및 연구원 명단 탭에 먼저 학생을 넣어 주세요'}</span></div>`}
   if(fd.t==='student'){const names=itemsOf(curPid(),'roster').map(i=>i.f.name);return `<label class="${fd.full?'full':''}">${lab}<select id="${id}" name="${fd.k}"><option value="">${fd.req?'선택':'없음'}</option>${names.map(n=>`<option ${n===v?'selected':''}>${esc(n)}</option>`).join('')}</select><span class="help">${names.length?'지도학생 및 연구원 명단에서 고릅니다':'지도학생 및 연구원 명단 탭에 먼저 학생을 넣어 주세요'}</span></label>`}
-  if(fd.t==='years'){const cur=v||{};return `<div class="full" style="display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;color:var(--mute);font-weight:500">${lab}</span><div class="years">${YEARS.map(y=>`<label>${y}<input type="number" name="${fd.k}.${y}" value="${esc(cur[y]||'')}" inputmode="numeric"></label>`).join('')}</div></div>`}
+  if(fd.t==='years'){const cur=v||{};return `<div class="full" style="display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;color:var(--mute);font-weight:500">${lab}</span><div class="years" data-years="${fd.k}">${yearBoxes(fd.k,rec||{},cur)}</div><span class="help">시작일·종료일 기간 중 올해까지의 연도 칸이 나와요. 해가 바뀌면 칸이 늘어나요</span></div>`}
   const type=fd.t==='date'?'date':fd.t==='number'?'number':'text';
   return `<label class="${fd.full?'full':''}">${lab}<input id="${id}" name="${fd.k}" type="${type}" value="${esc(v)}" placeholder="${fd.ph?'예: '+esc(fd.ph):''}">${fd.help?`<span class="help">${esc(fd.help)}</span>`:''}</label>`;
 }
@@ -1408,6 +1412,8 @@ document.addEventListener('change',async e=>{
   if(t.id==='me-rev'){S.me.rev=t.value||null;S.open=null;await refresh();return}
   if(t.id==='flt'){S.filterFix=t.checked;render();return}
   if(t.id==='recap-p'){S.recapP=t.value;render();return}
+  if((t.name==='start'||t.name==='end')&&t.form&&t.form.querySelector('[data-years]')){const box=t.form.querySelector('[data-years]'),k=box.dataset.years,cur={};
+    box.querySelectorAll('input').forEach(x=>{if(x.value.trim())cur[x.name.slice(k.length+1)]=x.value.trim()});box.innerHTML=yearBoxes(k,{start:t.form.elements.start.value,end:t.form.elements.end.value},cur);return}
   if(t.name==='degree'&&t.form&&t.form.elements.status){const st=t.form.elements.status,cur=st.value;st.innerHTML='<option value="">선택</option>'+STATUS_OF(t.value).map(o=>`<option ${o===cur?'selected':''}>${esc(o)}</option>`).join('');return}
   if(t.id==='jcr-base'){try{await db.doc('config/app').set({jcrBase:t.value},{merge:true});S.data.jcrBase=t.value;toast(t.value?`기준 연도를 ${t.value} JCR로 정했어요. "논문 IF·JCR 채우기"를 누르면 반영돼요`:'기준 연도를 지웠어요',4000)}catch(er){fail(er)}return}
   if(t.id==='filepick'){const f=t.files[0];if(f&&S.attachFor)await uploadFile(S.attachFor,f);return}
@@ -1434,7 +1440,7 @@ document.addEventListener('submit',async e=>{
   c.fields.forEach(fd=>{
     if(fd.t==='multi') f[fd.k]=[...form.querySelectorAll(`input[name="${fd.k}"]:checked`)].map(x=>x.value);
     else if(fd.t==='student'&&fd.multi) f[fd.k]=[...form.querySelectorAll(`input[name="${fd.k}"]:checked`)].map(x=>x.value).join(', ');
-    else if(fd.t==='years'){f[fd.k]={};YEARS.forEach(y=>{const x=form.elements[fd.k+'.'+y].value.trim();if(x)f[fd.k][y]=x})}
+    else if(fd.t==='years'){f[fd.k]={};form.querySelectorAll(`input[name^="${fd.k}."]`).forEach(x=>{const y=x.value.trim();if(y)f[fd.k][x.name.slice(fd.k.length+1)]=y})}
     else f[fd.k]=(form.elements[fd.k].value||'').trim();
     if(fd.req&&fd.t!=='years'&&(!f[fd.k]||(Array.isArray(f[fd.k])&&!f[fd.k].length))) miss.push(fd.l);
     if(fd.t==='area'&&(f[fd.k]||'').replace(/\s/g,'').length>fd.max) miss.push(fd.l+' 글자 수');
