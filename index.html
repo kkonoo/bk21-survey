@@ -110,6 +110,12 @@ details.ex summary{cursor:pointer;color:var(--navy);font-weight:600;font-size:14
 .news b{font-family:var(--mono);font-size:13px;color:var(--navy)}
 .news ul{margin:4px 0 8px;padding-left:20px}
 .news li{margin-bottom:2px;font-size:14px}
+details.fold>summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-weight:600}
+details.fold>summary::-webkit-details-marker{display:none}
+details.fold>summary .ttl{font-size:17px}
+details.fold>summary .caret{flex:none;width:7px;height:7px;border-right:2px solid var(--mute);border-bottom:2px solid var(--mute);transform:rotate(-45deg);margin:0 4px 0 2px}
+details.fold[open]>summary .caret{transform:rotate(45deg)}
+details.fold>.tablebox{margin-top:10px}
 .items .grp{font-size:13px;font-weight:700;color:var(--mute);margin-top:6px}
 .item{border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 14px}
 .item.fix{border-color:var(--warn);background:var(--warn-soft)}
@@ -779,7 +785,8 @@ async function publishAgg(){
 /* ===== 건의사항 게시판 (모든 링크에서 보고 쓰기, 관리자가 답글·삭제) ===== */
 async function loadBoard(){const q=await safe(db.collection('board'));S.data.board=q.docs.map(docOf).sort((a,b)=>ms(b.at)-ms(a.at))}
 const CHANGELOG=[
-  ['2026.10.15',['관리자: 링크 목록에서 링크를 삭제할 수 있어요',
+  ['2026.10.15',['관리자 화면: 교수별 현황 표와 질문·답변은 접어 두고, 링크 목록도 접을 수 있어요',
+    '관리자: 링크 목록에서 링크를 삭제할 수 있어요',
     '모든 항목에 비고 칸을 넣었어요. 적은 내용은 실적 카드에도 보여요',
     "논문 '본인 저자 역할'에 '1저자·교신'을 추가했어요",
     '위쪽 탭 순서: 내 실적 → 담당 교수 검토 → 학과 결산 → 건의사항 → 관리자',
@@ -875,10 +882,11 @@ function qHTML(q,mode,showCat,showProf){
 function adminQPanel(){ // 관리자 화면: 모든 교수님의 질문 (답변 대기 먼저, 답변한 것은 접어 둠)
   const all=S.data.qna.slice().sort((a,b)=>(!!a.a-!!b.a)||ms(b.at)-ms(a.at)), wait=all.filter(q=>!q.a), done=all.filter(q=>q.a);
   if(!all.length) return '';
-  return `<div class="panel" style="margin-top:18px"><div class="head"><h2 style="font-size:17px">질문·답변${wait.length?` <span class="chip rep">답변 대기 ${wait.length}</span>`:''}</h2><span class="msg">모든 교수님의 질문을 모았어요. 여기서 바로 답변할 수 있어요.</span></div>
+  return `<div class="panel" style="margin-top:18px"><details class="fold" ${fold('qna')}><summary><span class="caret" aria-hidden="true"></span><span class="ttl">질문·답변</span>${wait.length?` <span class="chip rep">답변 대기 ${wait.length}</span>`:''}<span class="msg" style="margin-left:auto">모든 교수님의 질문을 모았어요. 여기서 바로 답변할 수 있어요.</span></summary>
+    <div style="margin-top:14px"></div>
     ${wait.length?`<div class="items">${wait.map(q=>qHTML(q,'admin',true,true)).join('')}</div>`:'<div class="empty">답변을 기다리는 질문이 없어요.</div>'}
-    ${done.length?`<details style="margin-top:12px"><summary style="cursor:pointer;font-weight:600">답변한 질문 ${done.length}건</summary><div class="items" style="margin-top:10px">${done.map(q=>qHTML(q,'admin',true,true)).join('')}</div></details>`:''}
-  </div>`;
+    ${done.length?`<details style="margin-top:12px" ${fold('qnadone')}><summary style="cursor:pointer;font-weight:600">답변한 질문 ${done.length}건</summary><div class="items" style="margin-top:10px">${done.map(q=>qHTML(q,'admin',true,true)).join('')}</div></details>`:''}
+  </details></div>`;
 }
 function qPanel(p,cat,mode){ // cat==='home': 안내 화면 — 이 교수님의 질문을 모두 모아 보여주고, 항목과 상관없는 질문을 받는다
   const qs=qsOf(p.id,cat==='home'?null:cat), wait=qs.filter(q=>!q.a).length;
@@ -897,6 +905,8 @@ function exHTML(c){return EX[c.key].map(f=>{
   return `<div class="item ex"><div style="min-width:0"><div class="t">${esc(c.title(f))}</div><div class="meta">${meta}</div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"><span class="chip rep">예시 · 가상 자료</span>${chips.map(x=>`<span class="chip ${x[0]}">${esc(x[1])}</span>`).join('')}</div></div></div>`}).join('')}
 S.expanded=new Set();
+S.fold={}; // 관리자 화면의 접는 칸 (data-fold 이름 → 펼침 여부)
+const fold=k=>`data-fold="${k}" ${S.fold[k]?'open':''}`;
 function detailHTML(i,c){ // 입력한 모든 칸을 라벨과 함께 (빈 칸은 —)
   const val=(fd,v)=>{if(fd.t==='multi')return (v||[]).join(', ');if(fd.t==='years')return YEARS.filter(y=>(v||{})[y]).map(y=>y+': '+(Number(v[y])||v[y]).toLocaleString()).join(' · ');
     if(fd.t==='number'&&v!==''&&v!=null&&!isNaN(v))return Number(v).toLocaleString();return v==null?'':String(v)};
@@ -967,7 +977,8 @@ function adminHome(){
   const tot=P.reduce((a,p)=>a+stats(p).done,0), all=P.length*CATS.length;
   return `<div class="head"><h2>전체 진행 현황</h2><span class="msg">항목 확인 완료 ${tot} / ${all} · <span class="due">마감 ${esc(S.data.deadline)}</span></span></div>
   <div class="prog" style="margin-bottom:14px"><i style="width:${tot/all*100}%"></i></div>
-  <div class="tablebox"><table><thead><tr><th>교수</th><th>기초/임상</th><th>재학·수료생</th><th>담당 교수</th><th>확인 완료</th><th>실적</th><th>수정 요청</th><th>질문 대기</th><th>최근 수정</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
+  <details class="fold" ${fold('prog')}><summary><span class="caret" aria-hidden="true"></span>교수별 현황 표 (${P.length}명)</summary>
+  <div class="tablebox"><table><thead><tr><th>교수</th><th>기초/임상</th><th>재학·수료생</th><th>담당 교수</th><th>확인 완료</th><th>실적</th><th>수정 요청</th><th>질문 대기</th><th>최근 수정</th><th></th></tr></thead><tbody>${rows}</tbody></table></div></details>
   ${adminQPanel()}
   <div class="panel" style="margin-top:18px"><div class="head"><h2 style="font-size:17px">교수 추가</h2></div>
     <p class="msg">추가하면 그 교수님의 개인 링크도 함께 만들어져요. 담당 교수는 위 표에서 나중에 바꿀 수 있어요.</p>
@@ -1004,7 +1015,7 @@ function linkPanel(){
   return `<div class="panel" style="margin-top:18px"><div class="head"><h2 style="font-size:17px">개인 링크 · 관리자 권한</h2></div>
     <p class="msg">링크를 가진 사람은 누구나 그 교수님 자료를 입력·수정할 수 있어요. 해당 교수님(과 입력을 맡은 학생)에게만 보내 주세요.</p>
     <p class="msg">관리자 권한은 <b>여러 명</b>에게 줄 수 있어요. 권한을 바꾸고 싶으면 <b>링크 목록 보기</b>를 눌러서 바꿔 주세요.</p>
-    <div class="export"><button class="btn primary" data-act="links">링크 목록 보기</button>${S.links?'<button class="btn" data-act="copylinks">전체 복사 (이름·링크)</button>':''}</div>
+    <div class="export"><button class="btn primary" data-act="links">${S.links?'링크 목록 접기':'링크 목록 보기'}</button>${S.links?'<button class="btn" data-act="copylinks">전체 복사 (이름·링크)</button>':''}</div>
     ${S.links?`<div class="tablebox" style="margin-top:10px"><table><thead><tr><th>이름</th><th>권한</th><th>링크</th><th></th></tr></thead><tbody>${S.links.map(l=>`<tr><td>${esc(l.name)}</td><td>${esc(roleText(l))}</td><td class="mono" style="user-select:all;word-break:break-all">${esc(linkOf(l.id))}</td><td><button class="btn ghost sm" data-copy="${esc(linkOf(l.id))}">복사</button>${l.id===S.key?'<span class="msg">지금 쓰는 링크</span>':`<button class="btn ghost sm" data-admin="${l.id}" data-on="${l.admin?'':'1'}">${l.admin?'관리자 해제':'관리자 권한 주기'}</button><button class="btn ghost sm" data-delkey="${l.id}">삭제</button>`}</td></tr>`).join('')}</tbody></table></div>`:''}
     <div class="export" style="margin-top:12px"><input id="nk-name" placeholder="이름 (예: BK 사무국 ○○○)" style="max-width:220px" aria-label="새 링크 이름">
       <select id="nk-role" aria-label="새 링크 권한"><option value="admin">관리자 (전체 보기·취합·링크 관리)</option>${S.data.profs.map(p=>`<option value="${p.id}">${esc(p.name)} 교수님 대신 입력</option>`).join('')}</select>
@@ -1369,7 +1380,7 @@ document.addEventListener('click',async e=>{
     try{await navigator.clipboard.writeText(S.tsv);toast('복사했어요. 엑셀에 붙여 넣으세요')}catch(_){const t=$('#tsv');t.focus();t.select();toast('아래 내용을 선택해 복사해 주세요')}}
   if(act==='seed') await seedImport();
   if(act==='rosteradd') await rosterAdd();
-  if(act==='links') await loadLinks();
+  if(act==='links'){if(S.links){S.links=null;render()}else await loadLinks()}
   if(act==='newkey') await newKey();
   if(act==='addprof') await addProf();
   if(act==='grantrev') await grantRev();
@@ -1406,6 +1417,7 @@ document.addEventListener('change',async e=>{
   if(t.name&&t.closest('.checks')){const box=t.closest('.checks');const fd=CAT[box.closest('form').dataset.cat].fields.find(f=>f.k===t.name);
     if(fd.max&&box.querySelectorAll('input:checked').length>fd.max){t.checked=false;toast(`최대 ${fd.max}개까지 고를 수 있어요`)}}
 });
+document.addEventListener('toggle',e=>{const k=e.target.dataset&&e.target.dataset.fold;if(k)S.fold[k]=e.target.open},true);
 document.addEventListener('input',e=>{
   if(e.target.dataset.max){const n=e.target.value.replace(/\s/g,'').length,m=+e.target.dataset.max;const c=document.querySelector(`[data-ctr="${e.target.name}"]`);c.textContent=`${n} / ${m}자 (공백 제외)`;c.classList.toggle('over',n>m)}
 });
