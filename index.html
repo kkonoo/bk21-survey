@@ -779,7 +779,8 @@ async function publishAgg(){
 /* ===== 건의사항 게시판 (모든 링크에서 보고 쓰기, 관리자가 답글·삭제) ===== */
 async function loadBoard(){const q=await safe(db.collection('board'));S.data.board=q.docs.map(docOf).sort((a,b)=>ms(b.at)-ms(a.at))}
 const CHANGELOG=[
-  ['2026.10.15',['모든 항목에 비고 칸을 넣었어요. 적은 내용은 실적 카드에도 보여요',
+  ['2026.10.15',['관리자: 링크 목록에서 링크를 삭제할 수 있어요',
+    '모든 항목에 비고 칸을 넣었어요. 적은 내용은 실적 카드에도 보여요',
     "논문 '본인 저자 역할'에 '1저자·교신'을 추가했어요",
     '위쪽 탭 순서: 내 실적 → 담당 교수 검토 → 학과 결산 → 건의사항 → 관리자',
     "입력칸의 예시를 연하게 하고 앞에 '예:'를 붙였어요. 예시는 지우지 않아도 되고 바로 입력하면 돼요",
@@ -1004,7 +1005,7 @@ function linkPanel(){
     <p class="msg">링크를 가진 사람은 누구나 그 교수님 자료를 입력·수정할 수 있어요. 해당 교수님(과 입력을 맡은 학생)에게만 보내 주세요.</p>
     <p class="msg">관리자 권한은 <b>여러 명</b>에게 줄 수 있어요. 권한을 바꾸고 싶으면 <b>링크 목록 보기</b>를 눌러서 바꿔 주세요.</p>
     <div class="export"><button class="btn primary" data-act="links">링크 목록 보기</button>${S.links?'<button class="btn" data-act="copylinks">전체 복사 (이름·링크)</button>':''}</div>
-    ${S.links?`<div class="tablebox" style="margin-top:10px"><table><thead><tr><th>이름</th><th>권한</th><th>링크</th><th></th></tr></thead><tbody>${S.links.map(l=>`<tr><td>${esc(l.name)}</td><td>${esc(roleText(l))}</td><td class="mono" style="user-select:all;word-break:break-all">${esc(linkOf(l.id))}</td><td><button class="btn ghost sm" data-copy="${esc(linkOf(l.id))}">복사</button>${l.id===S.key?'<span class="msg">지금 쓰는 링크</span>':`<button class="btn ghost sm" data-admin="${l.id}" data-on="${l.admin?'':'1'}">${l.admin?'관리자 해제':'관리자 권한 주기'}</button>`}</td></tr>`).join('')}</tbody></table></div>`:''}
+    ${S.links?`<div class="tablebox" style="margin-top:10px"><table><thead><tr><th>이름</th><th>권한</th><th>링크</th><th></th></tr></thead><tbody>${S.links.map(l=>`<tr><td>${esc(l.name)}</td><td>${esc(roleText(l))}</td><td class="mono" style="user-select:all;word-break:break-all">${esc(linkOf(l.id))}</td><td><button class="btn ghost sm" data-copy="${esc(linkOf(l.id))}">복사</button>${l.id===S.key?'<span class="msg">지금 쓰는 링크</span>':`<button class="btn ghost sm" data-admin="${l.id}" data-on="${l.admin?'':'1'}">${l.admin?'관리자 해제':'관리자 권한 주기'}</button><button class="btn ghost sm" data-delkey="${l.id}">삭제</button>`}</td></tr>`).join('')}</tbody></table></div>`:''}
     <div class="export" style="margin-top:12px"><input id="nk-name" placeholder="이름 (예: BK 사무국 ○○○)" style="max-width:220px" aria-label="새 링크 이름">
       <select id="nk-role" aria-label="새 링크 권한"><option value="admin">관리자 (전체 보기·취합·링크 관리)</option>${S.data.profs.map(p=>`<option value="${p.id}">${esc(p.name)} 교수님 대신 입력</option>`).join('')}</select>
       <button class="btn" data-act="newkey">링크 만들기</button></div></div>`;
@@ -1072,6 +1073,13 @@ async function setAdmin(id,on){
     else await db.doc('keys/'+id).update({admin:firebase.firestore.FieldValue.delete()});
     await loadLinks(); toast(on?l.name+' 님께 관리자 권한을 드렸어요':l.name+' 님의 관리자 권한을 해제했어요');
   }catch(e){fail(e)}
+}
+async function delKey(id){
+  const l=(S.links||[]).find(x=>x.id===id); if(!l||id===S.key) return;
+  if(l.rev){toast('담당 교수 권한이 있는 링크예요. 먼저 담당 교수 칸에서 권한을 해제해 주세요',4500);return}
+  const only=l.prof&&S.links.filter(x=>x.prof===l.prof).length<=1;
+  if(!confirm(`'${l.name}' 링크를 삭제할까요?\n이 링크로는 더 이상 들어올 수 없어요.`+(only?`\n\n${(prof(l.prof)||{}).name||''} 교수님 링크가 이것 하나뿐이에요. 지우면 교수님이 들어올 수 없어요 (실적 자료는 그대로 남아요).`:''))) return;
+  try{await db.doc('keys/'+id).delete();await loadLinks();toast('링크를 삭제했어요')}catch(e){fail(e)}
 }
 async function newKey(){
   const name=$('#nk-name').value.trim(), r=$('#nk-role').value; if(!name){toast('이름을 넣어 주세요');$('#nk-name').focus();return}
@@ -1328,6 +1336,7 @@ document.addEventListener('click',async e=>{
   if(b.dataset.unfile){await unfile(b.dataset.unfile,b.dataset.fid);return}
   if(b.dataset.revoke){await revokeRev(b.dataset.revoke);return}
   if(b.dataset.admin){await setAdmin(b.dataset.admin,!!b.dataset.on);return}
+  if(b.dataset.delkey){await delKey(b.dataset.delkey);return}
   if(b.dataset.expand){const id=b.dataset.expand;S.expanded.has(id)?S.expanded.delete(id):S.expanded.add(id);render();return}
   if(b.dataset.edit){S.editing=b.dataset.edit;render();return}
   if(b.dataset.del){
