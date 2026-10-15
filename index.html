@@ -224,7 +224,7 @@ const STATUS_OF=d=>DEGREE_GROUPS.find(g=>g[0]==='연구원')[1].includes(d)?['�
 const STATUS_OLD={'학부 재학':'재학','입학 예정':'재학'}; // 예전 상태값은 읽을 때 바꿔 보여줌
 const MED_OLD={'의예·의학과 재학':'예','의대 졸업 (의사)':'예'}; // 의학 계열은 예/아니오로 (과정 칸으로 의대생·의사 구분)
 const FIELD_OPTS = {
-  role: ['1저자','교신','공저자'],
+  role: ['1저자','교신','1저자·교신','공저자'],
   gtype: ['정부 (지자체 포함)','산업체 (국내)','해외기관'],
   grole: ['연구책임자','세부(위탁)과제 책임자','공동연구원'],
   ipkind: ['등록특허','기술이전','창업','저서'],
@@ -370,6 +370,7 @@ const CATS = [
     {k:'title',l:'내용 (발표 제목·학회명·특허명 등)',t:'text',req:1,full:1},
    ], title:f=>f.title, meta:f=>[f.student, f.kind, f.date], chips:f=>[f.kind==='수상'&&['fix','수상 구분 다시 선택 (교내·교외·국제)']]},
 ];
+CATS.forEach(c=>c.fields.push({k:'note',l:'비고',t:'text',full:1})); // 모든 항목 맨 아래에 비고 칸 (카드에도 표시)
 const CAT = Object.fromEntries(CATS.map(c=>[c.key,c]));
 /* 작성 예시 (가상의 자료) */
 const EX = {
@@ -629,7 +630,7 @@ function promoCrit(type,target){ // 논문 총 편수 / JCR 상위 50% 이내 �
   if(target==='부교수') return type==='기초'?{total:5,if50:2}:type==='임상'?{total:3,if50:1}:null;
   return type==='기초'?{total:6,if50:3}:type==='임상'?{total:4,if50:1}:null;
 }
-const PROMO_MAIN=['1저자','교신','공동 제1·교신','주저자 (제1/교신 미구분)'];
+const PROMO_MAIN=['1저자','교신','1저자·교신','공동 제1·교신','주저자 (제1/교신 미구분)'];
 function promoPaper(i){const f=i.f,main=PROMO_MAIN.includes(f.role),nm=parseInt(f.nmain),n=Math.max(1,nm||1),j=parseFloat(f.jcr),hasJ=!isNaN(j),base=main?1/n:0;
   return {i,f,main,n,noN:main&&!nm,j:hasJ?j:null,eff:base*(hasJ&&j<=5?2:1),eff50:hasJ&&j<=50?base:0}}
 S.promoFrom={};
@@ -778,7 +779,9 @@ async function publishAgg(){
 /* ===== 건의사항 게시판 (모든 링크에서 보고 쓰기, 관리자가 답글·삭제) ===== */
 async function loadBoard(){const q=await safe(db.collection('board'));S.data.board=q.docs.map(docOf).sort((a,b)=>ms(b.at)-ms(a.at))}
 const CHANGELOG=[
-  ['2026.10.15',['위쪽 탭 순서: 내 실적 → 담당 교수 검토 → 학과 결산 → 건의사항 → 관리자',
+  ['2026.10.15',['모든 항목에 비고 칸을 넣었어요. 적은 내용은 실적 카드에도 보여요',
+    "논문 '본인 저자 역할'에 '1저자·교신'을 추가했어요",
+    '위쪽 탭 순서: 내 실적 → 담당 교수 검토 → 학과 결산 → 건의사항 → 관리자',
     "입력칸의 예시를 연하게 하고 앞에 '예:'를 붙였어요. 예시는 지우지 않아도 되고 바로 입력하면 돼요",
     '관리자 화면에서 모든 교수님의 질문을 한곳에서 보고 답변할 수 있어요',
     '건의사항 탭 맨 위에 업데이트 소식을 두었어요']],
@@ -911,6 +914,7 @@ function itemHTML(i,c,mode){
     <div class="acts">${mode!=='rev'?`${i.cat==='grant'&&(i.f.grole==='공동연구원'||i.f.knu==='아니오')?`<button class="btn sm" data-shareform="${i.id}">지분확인서</button>`:''}${S.data.uploadUrl?`<button class="btn sm" data-attach="${i.id}">증빙 첨부</button>`:''}<button class="btn sm" data-edit="${i.id}">수정</button><button class="btn ghost sm" data-del="${i.id}">삭제</button>`:''}</div>
     ${open?detailHTML(i,c):''}
     ${(i.files||[]).length?`<div class="files"><span>증빙</span>${i.files.map(x=>`<span><a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.n)}</a>${mode!=='rev'?`<button class="btn ghost sm" data-unfile="${i.id}" data-fid="${esc(x.id)}" aria-label="${esc(x.n)} 연결 해제">×</button>`:''}</span>`).join('')}</div>`:''}
+    ${i.f.note?`<div class="note" style="color:var(--ink)"><b>비고</b> ${esc(i.f.note)}</div>`:''}
     ${i.memo?`<div class="note" style="color:var(--mute)">참고${i.pre&&i.cat==='paper'?' (중간평가 1차조사, 2025년 기준)':''}: ${esc(i.memo)}${i.cat==='paper'?` · JCR 상위 ${i.f.jcr?esc(i.f.jcr)+'%':'% 미입력'}`:''}</div>`:''}
     ${i.rv.s==='fix'&&mode==='prof'?`<div class="note">담당 교수 의견: ${esc(i.rv.c)}</div>`:''}
     ${mode!=='prof'?`<div class="review"><button class="btn sm ok" data-rv="ok" data-id="${i.id}">확인</button><input id="c-${i.id}" placeholder="수정 요청 내용" value="${esc(i.rv.s==='fix'?i.rv.c:'')}"><button class="btn sm warn" data-rv="fix" data-id="${i.id}">수정 요청</button></div>`:''}
