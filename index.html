@@ -33,6 +33,7 @@
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.55;padding-inline:16px;padding-block:0 40px}
 button,input,select,textarea{font:inherit;color:inherit}
+::placeholder{color:var(--mute);opacity:.6}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .wrap{max-width:1180px;margin:0 auto}
 header.top{display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;padding-block:18px 14px;border-bottom:1px solid var(--line);margin-bottom:20px}
@@ -105,6 +106,10 @@ details.ex summary{cursor:pointer;color:var(--navy);font-weight:600;font-size:14
 .items{display:flex;flex-direction:column;gap:10px}
 .item.ask{border-left:4px solid var(--accent)}
 .ans{margin-top:8px;padding:8px 12px;background:var(--sunk);border-radius:8px;font-size:14px;white-space:pre-wrap}
+.news{margin-top:6px}
+.news b{font-family:var(--mono);font-size:13px;color:var(--navy)}
+.news ul{margin:4px 0 8px;padding-left:20px}
+.news li{margin-bottom:2px;font-size:14px}
 .items .grp{font-size:13px;font-weight:700;color:var(--mute);margin-top:6px}
 .item{border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 14px}
 .item.fix{border-color:var(--warn);background:var(--warn-soft)}
@@ -556,7 +561,7 @@ function render(){
   if(!S.role) return;
   const seg=$('#seg');
   const labels={prof:'내 실적',rev:'담당 교수 검토',admin:'관리자',recap:'학과 결산',board:'건의사항'};
-  const roles=(isAdmin()?Array.from(new Set([...S.roles.filter(r=>r!=='admin'),'rev','admin'])):S.roles).concat(S.data.recap?['recap']:[],['board']);
+  const roles=(isAdmin()?Array.from(new Set([...S.roles.filter(r=>r!=='admin'),'rev'])):S.roles).concat(S.data.recap?['recap']:[],['board'],isAdmin()?['admin']:[]);
   seg.hidden=roles.length<2;
   seg.innerHTML=roles.map(r=>`<button data-role="${r}" aria-pressed="${r===S.role}">${labels[r]}</button>`).join('');
   const who=$('#who');
@@ -772,9 +777,30 @@ async function publishAgg(){
 }
 /* ===== 건의사항 게시판 (모든 링크에서 보고 쓰기, 관리자가 답글·삭제) ===== */
 async function loadBoard(){const q=await safe(db.collection('board'));S.data.board=q.docs.map(docOf).sort((a,b)=>ms(b.at)-ms(a.at))}
+const CHANGELOG=[
+  ['2026.10.15',['위쪽 탭 순서: 내 실적 → 담당 교수 검토 → 학과 결산 → 건의사항 → 관리자',
+    "입력칸의 예시를 연하게 하고 앞에 '예:'를 붙였어요. 예시는 지우지 않아도 되고 바로 입력하면 돼요",
+    '관리자 화면에서 모든 교수님의 질문을 한곳에서 보고 답변할 수 있어요',
+    '건의사항 탭 맨 위에 업데이트 소식을 두었어요']],
+  ['2026.10.13',['실적 카드 제목을 누르면 입력한 내용 전체가 펼쳐져요',
+    '연구비: 참여(공동연구원) 과제용 지분확인서 양식과, 과제 정보가 채워진 지분확인서 내려받기',
+    '항목마다·안내 화면에 질문칸, 위쪽에 건의사항 게시판',
+    "'산업·사회 기여·국내 활동': 국내 활동(학회 임원, RB·CRB 위원, 국내 강연·수상 등)은 여기에",
+    '지도학생 명단: 학부·예정 / 대학원 / 연구원으로 묶음, 입학 예정 인턴·석사/학사 연구원, 의학 계열, 대학원생 학번 미입력 표시',
+    '지도학생 실적: 수상을 교내 / 교외·국내 / 국제로 구분',
+    '공동지도 학생은 학과 결산에서 한 번만 셈']],
+  ['2026.10.12',['라이트/다크 모드 버튼(☀️/🌙)과 새로고침(↻) 버튼',
+    '실적 육각형(본인·관리자만)과 학과 결산 탭',
+    '마감일을 눈에 띄게 표시']],
+];
+function newsHTML(){
+  const one=([d,a])=>`<div class="news"><b>${d}</b><ul>${a.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`;
+  return `<div class="panel" style="margin-bottom:16px"><div class="head"><h2 style="font-size:17px">업데이트 소식</h2><span class="msg">사이트가 바뀔 때마다 여기에 적어요.</span></div>
+    ${one(CHANGELOG[0])}${CHANGELOG.length>1?`<details style="margin-top:8px"><summary style="cursor:pointer;color:var(--navy);font-weight:600;font-size:14px">이전 소식</summary>${CHANGELOG.slice(1).map(one).join('')}</details>`:''}</div>`;
+}
 function boardView(){
   const B=S.data.board, adm=isAdmin();
-  return `<div class="panel"><div class="head"><div><h2>건의사항</h2><span class="msg">이 시스템에 대한 건의나 불편한 점을 남겨 주세요. 모든 분이 함께 보고, BK 사무국이 답글을 달아요.</span></div></div>
+  return `${newsHTML()}<div class="panel"><div class="head"><div><h2>건의사항</h2><span class="msg">이 시스템에 대한 건의나 불편한 점을 남겨 주세요. 모든 분이 함께 보고, BK 사무국이 답글을 달아요.</span></div></div>
     <textarea id="bd-new" placeholder="예: 논문 DOI 자동 채우기가 안 되는 학술지가 있어요" style="min-height:70px"></textarea>
     <div class="export" style="margin-top:8px"><button class="btn primary" data-act="post">올리기</button><span class="msg"><b>${esc(S.name)}</b> 이름으로 올라가요</span></div>
     <div class="items" style="margin-top:16px">${B.length?B.map(x=>`<div class="item"><div style="min-width:0"><div style="white-space:pre-wrap">${esc(x.text)}</div><div class="meta"><span>${esc(x.by||'')}</span><span>${dstr(x.at)}</span></div>
@@ -833,13 +859,21 @@ function catPanel(p,c,mode){
 const ms=t=>t&&t.toMillis?t.toMillis():t instanceof Date?t.getTime():0;
 const dstr=t=>{const d=t&&t.toDate?t.toDate():t instanceof Date?t:null;return d?d.getFullYear()+'.'+String(d.getMonth()+1).padStart(2,'0')+'.'+String(d.getDate()).padStart(2,'0'):''};
 const qsOf=(pid,cat)=>S.data.qna.filter(q=>q.prof===pid&&(!cat||q.cat===cat)).sort((a,b)=>(!!a.a-!!b.a)||ms(b.at)-ms(a.at)); // 답변 대기 먼저, 최근 순
-function qHTML(q,mode,showCat){
+function qHTML(q,mode,showCat,showProf){
   return `<div class="item ${q.a?'':'ask'}"><div style="min-width:0">
     <div class="t" style="white-space:pre-wrap">Q. ${esc(q.q)}</div>
-    <div class="meta">${[showCat&&(q.cat==='home'?'일반':(CAT[q.cat]||{}).name),q.by,dstr(q.at)].filter(Boolean).map(x=>`<span>${esc(x)}</span>`).join('')}${q.a?'':'<span class="chip rep">답변 대기</span>'}</div>
+    <div class="meta">${[showProf&&prof(q.prof)&&prof(q.prof).name+' 교수',showCat&&(q.cat==='home'?'일반':(CAT[q.cat]||{}).name),q.by,dstr(q.at)].filter(Boolean).map(x=>`<span>${esc(x)}</span>`).join('')}${q.a?'':'<span class="chip rep">답변 대기</span>'}</div>
     ${q.a?`<div class="ans">A. ${esc(q.a)} <span class="msg">— ${esc([q.aby,dstr(q.aat)].filter(Boolean).join(' · '))}</span></div>`:''}</div>
-    <div class="acts">${showCat&&CAT[q.cat]?`<button class="btn sm" data-goto="${q.cat}">열기</button>`:''}${mode!=='rev'?`<button class="btn ghost sm" data-delq="${q.id}">삭제</button>`:''}</div>
+    <div class="acts">${showProf?`<button class="btn sm" data-openq="${q.prof}" data-qcat="${q.cat}">열기</button>`:showCat&&CAT[q.cat]?`<button class="btn sm" data-goto="${q.cat}">열기</button>`:''}${mode!=='rev'?`<button class="btn ghost sm" data-delq="${q.id}">삭제</button>`:''}</div>
     ${mode!=='prof'?`<div class="review"><input id="a-${q.id}" placeholder="답변" value="${esc(q.a||'')}"><button class="btn sm ok" data-ans="${q.id}">${q.a?'답변 고치기':'답변 달기'}</button></div>`:''}
+  </div>`;
+}
+function adminQPanel(){ // 관리자 화면: 모든 교수님의 질문 (답변 대기 먼저, 답변한 것은 접어 둠)
+  const all=S.data.qna.slice().sort((a,b)=>(!!a.a-!!b.a)||ms(b.at)-ms(a.at)), wait=all.filter(q=>!q.a), done=all.filter(q=>q.a);
+  if(!all.length) return '';
+  return `<div class="panel" style="margin-top:18px"><div class="head"><h2 style="font-size:17px">질문·답변${wait.length?` <span class="chip rep">답변 대기 ${wait.length}</span>`:''}</h2><span class="msg">모든 교수님의 질문을 모았어요. 여기서 바로 답변할 수 있어요.</span></div>
+    ${wait.length?`<div class="items">${wait.map(q=>qHTML(q,'admin',true,true)).join('')}</div>`:'<div class="empty">답변을 기다리는 질문이 없어요.</div>'}
+    ${done.length?`<details style="margin-top:12px"><summary style="cursor:pointer;font-weight:600">답변한 질문 ${done.length}건</summary><div class="items" style="margin-top:10px">${done.map(q=>qHTML(q,'admin',true,true)).join('')}</div></details>`:''}
   </div>`;
 }
 function qPanel(p,cat,mode){ // cat==='home': 안내 화면 — 이 교수님의 질문을 모두 모아 보여주고, 항목과 상관없는 질문을 받는다
@@ -886,7 +920,7 @@ function itemHTML(i,c,mode){
 function fieldHTML(fd,v,rec){
   const id='f-'+fd.k, req=fd.req?' <span class="req">*</span>':'';
   const lab=`<span>${esc(fd.l)}${req}</span>`;
-  if(fd.t==='doi') return `<label class="full">${lab}<div class="row"><input id="${id}" name="${fd.k}" value="${esc(v)}" placeholder="10.xxxx/xxxxx" spellcheck="false"><button class="btn" type="button" data-act="doi">자동 채우기</button></div><span class="help" id="doi-msg">DOI를 넣고 누르면 제목·학술지·게재연월·권호·쪽·저자 수가 채워집니다.</span></label>`;
+  if(fd.t==='doi') return `<label class="full">${lab}<div class="row"><input id="${id}" name="${fd.k}" value="${esc(v)}" placeholder="예: 10.xxxx/xxxxx" spellcheck="false"><button class="btn" type="button" data-act="doi">자동 채우기</button></div><span class="help" id="doi-msg">DOI를 넣고 누르면 제목·학술지·게재연월·권호·쪽·저자 수가 채워집니다.</span></label>`;
   if(fd.t==='select'){const L=fd.of?fd.of(rec||{}):FIELD_OPTS[fd.o];return `<label class="${fd.full?'full':''}">${lab}<select id="${id}" name="${fd.k}"><option value="">선택</option>${v&&!L.includes(v)?`<option selected>${esc(v)}</option>`:''}${(()=>{const op=o=>`<option ${o===v?'selected':''}>${esc(o)}</option>`;return OPT_GROUPS[fd.o]?OPT_GROUPS[fd.o].map(([g,os])=>`<optgroup label="${g}">${os.map(op).join('')}</optgroup>`).join(''):L.map(op).join('')})()}</select></label>`}
   if(fd.t==='yn') return `<label class="${fd.full?'full':''}">${lab}<select id="${id}" name="${fd.k}"><option value="">선택</option>${['예','아니오'].map(o=>`<option ${o===v?'selected':''}>${o}</option>`).join('')}</select></label>`;
   if(fd.t==='area'){const n=(v||'').replace(/\s/g,'').length;return `<label class="full">${lab}<textarea id="${id}" name="${fd.k}" data-max="${fd.max}">${esc(v)}</textarea><span class="ctr ${n>fd.max?'over':''}" data-ctr="${fd.k}">${n} / ${fd.max}자 (공백 제외)</span></label>`}
@@ -894,7 +928,7 @@ function fieldHTML(fd,v,rec){
   if(fd.t==='student'){const names=itemsOf(curPid(),'roster').map(i=>i.f.name);return `<label class="${fd.full?'full':''}">${lab}<select id="${id}" name="${fd.k}"><option value="">${fd.req?'선택':'없음'}</option>${names.map(n=>`<option ${n===v?'selected':''}>${esc(n)}</option>`).join('')}</select><span class="help">${names.length?'지도학생 및 연구원 명단에서 고릅니다':'지도학생 및 연구원 명단 탭에 먼저 학생을 넣어 주세요'}</span></label>`}
   if(fd.t==='years'){const cur=v||{};return `<div class="full" style="display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;color:var(--mute);font-weight:500">${lab}</span><div class="years">${YEARS.map(y=>`<label>${y}<input type="number" name="${fd.k}.${y}" value="${esc(cur[y]||'')}" inputmode="numeric"></label>`).join('')}</div></div>`}
   const type=fd.t==='date'?'date':fd.t==='number'?'number':'text';
-  return `<label class="${fd.full?'full':''}">${lab}<input id="${id}" name="${fd.k}" type="${type}" value="${esc(v)}" placeholder="${esc(fd.ph||'')}">${fd.help?`<span class="help">${esc(fd.help)}</span>`:''}</label>`;
+  return `<label class="${fd.full?'full':''}">${lab}<input id="${id}" name="${fd.k}" type="${type}" value="${esc(v)}" placeholder="${fd.ph?'예: '+esc(fd.ph):''}">${fd.help?`<span class="help">${esc(fd.help)}</span>`:''}</label>`;
 }
 function topPick(c){
   if(c.key!=='top') return '';
@@ -929,6 +963,7 @@ function adminHome(){
   return `<div class="head"><h2>전체 진행 현황</h2><span class="msg">항목 확인 완료 ${tot} / ${all} · <span class="due">마감 ${esc(S.data.deadline)}</span></span></div>
   <div class="prog" style="margin-bottom:14px"><i style="width:${tot/all*100}%"></i></div>
   <div class="tablebox"><table><thead><tr><th>교수</th><th>기초/임상</th><th>재학·수료생</th><th>담당 교수</th><th>확인 완료</th><th>실적</th><th>수정 요청</th><th>질문 대기</th><th>최근 수정</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
+  ${adminQPanel()}
   <div class="panel" style="margin-top:18px"><div class="head"><h2 style="font-size:17px">교수 추가</h2></div>
     <p class="msg">추가하면 그 교수님의 개인 링크도 함께 만들어져요. 담당 교수는 위 표에서 나중에 바꿀 수 있어요.</p>
     <div class="export"><input id="np-name" placeholder="이름" style="max-width:120px" aria-label="교수 이름">
@@ -1302,6 +1337,7 @@ document.addEventListener('click',async e=>{
     try{const ref=await db.collection('qna').add(x);S.data.qna.push(Object.assign({},x,{id:ref.id,at:new Date()}));toast('질문을 남겼어요. 답변이 달리면 여기에 보여요')}catch(er){fail(er)} render();return}
   if(b.dataset.ans){const q=S.data.qna.find(x=>x.id===b.dataset.ans),a=$('#a-'+q.id).value.trim();if(!a){toast('답변을 적어 주세요');$('#a-'+q.id).focus();return}
     const upd={a,aby:S.name||'',aat:TS()};try{await db.doc('qna/'+q.id).update(upd);Object.assign(q,upd,{aat:new Date()});toast('답변을 달았어요')}catch(er){fail(er)} render();return}
+  if(b.dataset.openq){S.open=b.dataset.openq;S.cat=CAT[b.dataset.qcat]?b.dataset.qcat:'home';S.editing=null;render();scrollTo(0,0);return}
   if(b.dataset.delq){if(!confirm('이 질문을 지울까요?'))return;try{await db.doc('qna/'+b.dataset.delq).delete();S.data.qna=S.data.qna.filter(x=>x.id!==b.dataset.delq);toast('질문을 지웠어요')}catch(er){fail(er)} render();return}
   if(b.dataset.reply){const x=S.data.board.find(y=>y.id===b.dataset.reply),r=$('#r-'+x.id).value.trim();
     try{await db.doc('board/'+x.id).update({reply:r,rby:S.name||''});x.reply=r;x.rby=S.name||'';toast(r?'답글을 달았어요':'답글을 지웠어요')}catch(er){fail(er)} render();return}
