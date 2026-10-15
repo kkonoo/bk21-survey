@@ -226,7 +226,7 @@ textarea.tsv{font-family:var(--mono);font-size:12px;min-height:120px;margin-top:
 const DEGREE_GROUPS=[['학부·예정',['학부연구생','학·석 연계과정','입학 예정 인턴']],['대학원',['석사','박사','석박통합']],['연구원',['박사후연구원','연구교수','석사연구원','학사연구원']]];
 const OPT_GROUPS={degree:DEGREE_GROUPS};
 // 상태는 과정에 맞는 것만 (학부·대학원·인턴은 학생 상태, 연구원은 계약 상태)
-const STATUS_OF=d=>DEGREE_GROUPS.find(g=>g[0]==='연구원')[1].includes(d)?['계약 중','계약 종료']:['재학','휴학','수료','졸업','중단'];
+const STATUS_OF=d=>d==='입학 예정 인턴'?['학부 재학','학부 휴학','학사 졸업','인턴 종료']:DEGREE_GROUPS.find(g=>g[0]==='연구원')[1].includes(d)?['계약 중','계약 종료']:['재학','휴학','수료','졸업','중단'];
 const STATUS_OLD={'학부 재학':'재학','입학 예정':'재학'}; // 예전 상태값은 읽을 때 바꿔 보여줌
 const MED_OLD={'의예·의학과 재학':'예','의대 졸업 (의사)':'예'}; // 의학 계열은 예/아니오로 (과정 칸으로 의대생·의사 구분)
 const FIELD_OPTS = {
@@ -260,7 +260,7 @@ const CATS = [
     {k:'med',l:'의학 계열',t:'yn'},
     {k:'ckind',l:'졸업 후 진로',t:'select',o:'career'},
     {k:'career',l:'진로 기관 · 직위',t:'text',full:1,ph:'한국뇌연구원 연수연구원'},
-   ], title:f=>f.name+(f.sid?' · '+f.sid:''), meta:f=>[f.degree, f.status, f.admit&&((degGroup(f.degree)==='연구원'?'임용 ':'입학 ')+f.admit), f.grad&&((f.status==='중단'?'중단 ':f.status==='계약 종료'?'종료 ':'졸업 ')+f.grad), f.career], chips:f=>[f.bk==='예'&&['rep','BK 참여'], f.foreign==='예'&&['pre','외국인'], f.med==='예'&&['pre','의학 계열'], f.status==='졸업'&&!f.ckind&&['fix','진로 미입력'], degGroup(f.degree)==='대학원'&&!(f.sid||'').trim()&&['fix','학번 미입력']]},
+   ], title:f=>f.name+(f.sid?' · '+f.sid:''), meta:f=>[f.degree, f.status, f.admit&&((degGroup(f.degree)==='연구원'?'임용 ':'입학 ')+f.admit), f.grad&&((f.status==='중단'?'중단 ':/종료$/.test(f.status)?'종료 ':'졸업 ')+f.grad), f.career], chips:f=>[f.bk==='예'&&['rep','BK 참여'], f.status&&!STATUS_OF(f.degree).includes(f.status)&&['fix','상태 다시 선택'], f.foreign==='예'&&['pre','외국인'], f.med==='예'&&['pre','의학 계열'], f.status==='졸업'&&!f.ckind&&['fix','진로 미입력'], degGroup(f.degree)==='대학원'&&!(f.sid||'').trim()&&['fix','학번 미입력']]},
   {key:'paper', name:'논문', table:'3-2 · 3-3', rule:'<b>2021.1 이후</b> 게재된 SCI(E)·SSCI·A&HCI·등재(후보)·Scopus 논문 전체 (경북대 소속 표기, 권·호·쪽이 있는 논문). DOI만 넣고 <b>자동 채우기</b>를 누르세요. <b>IF와 JCR 상위 %를 S2Journal·JCR에서 확인해 넣어 주세요</b> (참고 칸의 IF는 중간평가 1차조사 값, 2025년 기준) (출판 당시: 7–12월 출판은 전년도, 1–6월 출판은 전전년도 JCR). 신청서는 <b>대표업적 1인당 3건</b>(정성 70%)과 <b>전체 논문</b>(정량 30%)을 함께 봅니다.',
    fields:[
     {k:'doi',l:'DOI',t:'doi',req:1,full:1},
@@ -450,7 +450,7 @@ const EX = {
     {name:'박민수',degree:'박사후연구원',status:'계약 중',bk:'예',admit:'2025.03',foreign:'아니오'},
     {name:'최지은',sid:'2022xxxxxx',degree:'학부연구생',status:'재학',bk:'아니오',admit:'2025.01',foreign:'아니오',med:'예'},
     {name:'정하늘',sid:'2023xxxxxx',degree:'학·석 연계과정',status:'재학',bk:'아니오',admit:'2025.03',foreign:'아니오'},
-    {name:'오하나',degree:'입학 예정 인턴',status:'재학',bk:'아니오',admit:'2026.07',foreign:'아니오',med:'아니오'},
+    {name:'오하나',degree:'입학 예정 인턴',status:'학부 재학',bk:'아니오',admit:'2026.07',foreign:'아니오',med:'아니오'},
   ],
   stu:[
     {student:'김철수',kind:'학회 발표 (국제)',date:'2025.10',title:'Society for Neuroscience 2025 포스터 발표 "Microglial aging ..."'},
@@ -507,7 +507,7 @@ function showNoKey(msg){
 /* ===== 데이터 읽기 ===== */
 const ROLE_OLD={'제1저자':'1저자','교신저자':'교신','기타저자':'공저자','1저자(공동)':'1저자','교신(공동)':'교신'};
 const ROLE_REDO=['공동 제1·교신','주저자 (제1/교신 미구분)'];
-const docOf=d=>{const x=Object.assign({id:d.id},d.data());if(x.cat==='roster'&&x.f&&STATUS_OLD[x.f.status])x.f.status=STATUS_OLD[x.f.status];if(x.cat==='roster'&&x.f&&MED_OLD[x.f.med])x.f.med=MED_OLD[x.f.med];if(x.cat==='paper'&&x.f&&ROLE_OLD[x.f.role])x.f.role=ROLE_OLD[x.f.role];if(x.cat==='roster'&&x.pre&&x.f&&x.f.bk===undefined)x.f.bk='예';return x};
+const docOf=d=>{const x=Object.assign({id:d.id},d.data());if(x.cat==='roster'&&x.f&&STATUS_OLD[x.f.status]&&!STATUS_OF(x.f.degree).includes(x.f.status))x.f.status=STATUS_OLD[x.f.status];if(x.cat==='roster'&&x.f&&MED_OLD[x.f.med])x.f.med=MED_OLD[x.f.med];if(x.cat==='paper'&&x.f&&ROLE_OLD[x.f.role])x.f.role=ROLE_OLD[x.f.role];if(x.cat==='roster'&&x.pre&&x.f&&x.f.bk===undefined)x.f.bk='예';return x};
 async function loadCommon(){
   const [rv,cfg]=await Promise.all([db.collection('reviewers').get(),db.doc('config/app').get()]);
   S.data.reviewers=rv.docs.map(docOf).sort((a,b)=>a.id.localeCompare(b.id,undefined,{numeric:true}));
@@ -785,7 +785,8 @@ async function publishAgg(){
 /* ===== 건의사항 게시판 (모든 링크에서 보고 쓰기, 관리자가 답글·삭제) ===== */
 async function loadBoard(){const q=await safe(db.collection('board'));S.data.board=q.docs.map(docOf).sort((a,b)=>ms(b.at)-ms(a.at))}
 const CHANGELOG=[
-  ['2026.10.15',["지도학생 및 연구원 명단의 과정에 '연구교수'를 추가했어요 (박사후연구원으로 넣어 두셨다면 바꿔 주세요)",
+  ['2026.10.15',["입학 예정 인턴의 상태는 학부 재학 · 학부 휴학 · 학사 졸업 · 인턴 종료 중에서 골라요. 상태가 과정과 맞지 않으면 '상태 다시 선택'이 떠요",
+    "지도학생 및 연구원 명단의 과정에 '연구교수'를 추가했어요 (박사후연구원으로 넣어 두셨다면 바꿔 주세요)",
     "'작성 예시'는 참고용 가상 자료라 수정할 수 없다고 적어 두었어요",
     '논문 \'지도학생 주저자\'를 여러 명 고를 수 있어요 (학생 공동 주저자)',
     "관리자: 실적 카드의 '참고'(기초자료)가 틀렸으면 수정 화면에서 고치거나 지울 수 있어요",
