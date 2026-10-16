@@ -34,6 +34,8 @@ function navHTML(p,mode){
 }
 function profView(pid,mode){const p=prof(pid);if(!p)return '<div class="empty">교수 정보를 불러오지 못했어요.</div>';return `<div class="layout">${navHTML(p,mode)}<section>${S.cat==='home'||(S.cat==='promo'&&!promoOK(p,mode))||(S.cat==='hex'&&mode==='rev')?homePanel(p,mode):S.cat==='promo'?promoPanel(p):S.cat==='hex'?hexPanel(p):catPanel(p,CAT[S.cat],mode)}</section></div>`}
 
+// 안내 화면 맨 위 공지 (새 공지는 맨 앞에 넣기)
+const NOTICES=[PRIVACY_NOTE.replace('🔒 ','')+' 사진이면 가리고 찍거나, PDF면 가린 뒤 다시 저장해서 올려 주세요. 이미 올린 파일에 가리지 않은 정보가 있으면 BK 사무국에 알려 주세요 (카드에서 연결을 떼도 드라이브에는 파일이 남아요).'];
 function homePanel(p,mode){
   const st=stats(p), fixes=itemsOf(p.id).filter(i=>i.rv.s==='fix');
   const intro=mode==='prof'
@@ -46,7 +48,8 @@ function homePanel(p,mode){
        <p class="msg">입력한 내용은 바로 저장됩니다. 여러 번 나눠서 하셔도 돼요.</p>`
     : `<h2>${esc(p.name)} 교수 · 검토 요약</h2><p class="msg">왼쪽에서 항목을 열어 건별로 확인하거나 수정 요청을 남기세요.</p>`;
   const ro=mode==='rev'?'disabled':'';
-  return `<div class="welcome">
+  return `<div class="notice"><b>📢 공지사항</b><ul>${NOTICES.map(n=>`<li>${n}</li>`).join('')}</ul></div>
+  <div class="welcome">
     <div class="panel">${intro}</div>
     <div class="panel"><dl class="kv">
       <dt>구분</dt><dd>${mode!=='rev'?`<select data-pf="type" aria-label="기초/임상" style="max-width:100px">${['기초','임상'].map(t=>`<option ${t===p.type?'selected':''}>${t}</option>`).join('')}</select>`:esc(p.type)}${mode!=='rev'?` · <select data-pf="rank" aria-label="직급" style="max-width:200px"><option value="">직급 선택</option>${RANKS.map(r=>`<option ${r===p.rank?'selected':''}>${r}</option>`).join('')}</select>`:p.rank?' · '+esc(p.rank):''}</dd>

@@ -27,6 +27,8 @@ const YEARS = Array.from({length:Math.max(2026,new Date().getFullYear())-2020},(
 // 연구비 연도별 입금액 칸: 시작~종료 연도 중 2021년부터 올해까지 (이미 값이 있는 연도는 범위 밖이어도 남김)
 const yearsOf=(f,cur)=>{const now=new Date().getFullYear(),a=Math.max(2021,parseInt(f.start)||2021),b=Math.min(now,parseInt(f.end)||now),ys=[];for(let y=a;y<=b;y++)ys.push(String(y));return [...new Set([...ys,...Object.keys(cur||{}).filter(y=>cur[y])])].sort()};
 const yearBoxes=(k,f,cur)=>yearsOf(f,cur).map(y=>`<label>${y}<input type="number" name="${k}.${y}" value="${esc(cur[y]||'')}" inputmode="numeric"></label>`).join('')||'<span class="help">시작 연도가 되면 칸이 생겨요</span>';
+// 증빙 자료 개인정보 안내 (모든 항목 안내·안내 화면 공지·자동 채우기에 같이 씀)
+const PRIVACY_NOTE='🔒 증빙 자료는 <b>주민등록번호·외국인등록번호, 계좌번호, 휴대전화번호·집 주소, 환자 정보</b> 같은 민감한 개인정보를 <b>가리고</b> 올려 주세요.';
 const CATS = [
   {key:'roster', name:'지도학생 및 연구원 명단', table:'첨부 2·3·4 · 2-2', rule:'<b>논문보다 먼저 입력해 주세요</b> — 논문 탭의 지도학생 주저자를 이 명단에서 고릅니다. 4단계 BK 참여학생은 미리 채워 두었으니 <b>졸업생 진로 확인</b>과 <b>박사후연구원·학부연구생 추가</b>부터 해 주세요.<br><b>2021년 이후</b> 지도한 학생 전원 (재학·수료·졸업), 박사후연구원, 그리고 연구실의 <b>학부연구생·학석 연계과정생</b> (5단계는 학·석·박 연계를 봅니다). <b>4단계 BK 참여학생 명단(2020.2–2026.2학기)</b>으로 미리 채웠으니 지금 명단에 없는 학생(졸업생의 <b>졸업 연월·진로</b>, 상태)을 고쳐 주시고, BK에 참여하지 않은 대학원생과 <b>박사후연구원·연구교수·연구원·학부연구생·입학 예정 인턴</b>은 <b>+ 추가</b>로 넣어 주세요. 우리 대학원에 들어올 예정이면 (석사를 마친 경우도) <b>입학 예정 인턴</b>, 입학 계획 없이 계약해 일하면 <b>석사·학사연구원</b>으로 넣어 주세요. 학생마다 <b>의학 계열</b>(의대생·의사 여부, 의사과학자 양성 사업용)도 골라 주세요. 학생 수가 장학금 규모와 참여교수 결정의 기준이 됩니다. <b>BK 참여 여부와 관계없이 모두 넣고</b>, 지금 BK 참여 중인지만 따로 표시해 주세요 (26.2학기 BK 참여 중인 학생은 \'예\'로 되어 있어요).',
    fields:[

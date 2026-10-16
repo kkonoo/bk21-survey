@@ -11,7 +11,7 @@ function aiBoxHTML(){return `<details class="aibox full"><summary>✨ 증빙 자
   <label>메모 · 붙여 넣은 글 · 부탁 (없어도 돼요)<textarea id="ai-note" rows="3" placeholder="예: 우수성은 학생 교육 효과 위주로 / 수상명은 최우수 포스터상"></textarea></label>
   <label>내 Claude API 키<div class="row"><input type="password" id="ai-key" value="${esc(aiKey())}" placeholder="sk-ant-…" autocomplete="off" spellcheck="false"><button type="button" class="btn" data-act="aikey-clear">지우기</button></div>
     <span class="help">키는 이 브라우저에만 저장돼요 (공용 PC면 쓰고 나서 지워 주세요). console.anthropic.com → API Keys에서 만들고, 쓴 만큼 그 계정에 요금이 나가요.</span></label>
-  <div class="row" style="align-items:center"><button type="button" class="btn primary" data-act="aifill">채우기</button><span class="help" id="ai-msg">빈 칸을 채우고 서술 칸은 초안을 써요. 자료에 없는 숫자·이름은 지어내지 않아요. 환자 정보·미발표 데이터는 넣지 마세요.</span></div></details>`}
+  <div class="row" style="align-items:center"><button type="button" class="btn primary" data-act="aifill">채우기</button><span class="help" id="ai-msg">빈 칸을 채우고 서술 칸은 초안을 써요. 자료에 없는 숫자·이름은 지어내지 않아요. 민감한 개인정보는 가리고, 환자 정보·미발표 데이터는 넣지 마세요.</span></div></details>`}
 const AI_SYSTEM=`너는 경북대학교 의과학과 BK21 교육연구단의 교수 실적 조사 입력을 돕는다. 연구실 사람이 증빙 자료(PDF·사진)와 메모를 주면, 지금 열린 실적 입력 양식의 칸에 넣을 값을 정한다.
 - 빈 칸은 자료로 채운다.
 - 이미 적힌 칸은 메모가 바꾸라고 하거나 자료와 분명히 다를 때만 고친다. 바꿀 것 없는 칸은 fields 에 넣지 않는다.

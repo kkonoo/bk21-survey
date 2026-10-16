@@ -15,7 +15,7 @@ function catPanel(p,c,mode){
         ${c.key==='grant'?`<a class="btn" href="forms/share-confirmation.docx" download="연구비_지분확인서_양식.docx">지분확인서 양식 내려받기</a>`:''}
         ${canEdit&&!editingNew?`<button class="btn primary" data-act="add">+ 추가</button>`:''}
       </div></div>
-    <div class="rule">${c.rule}</div>
+    <div class="rule">${c.rule}<br>${PRIVACY_NOTE}</div>
     ${EX[c.key]&&mode!=='rev'?`<details class="ex" ${it.length?'':'open'}><summary>작성 예시 보기 (${EX[c.key].length}가지 · 참고용이라 수정할 수 없어요)</summary>${exHTML(c)}</details>`:''}
     ${c.key==='collab'?(()=>{const A=intlAuto(p.id);return `<div class="items" style="margin-bottom:12px">${A.length?A.map(a=>`<div class="item"><div><div class="t">${esc(a.output)}</div><div class="meta">${[a.src+'에서 자동',a.partner||'국외 공동연구자 미입력',a.inst||'기관 미입력',a.year].filter(Boolean).map(x=>`<span>${esc(x)}</span>`).join('')}</div></div></div>`).join(''):'<div class="empty">논문·특허 탭에서 국제 = 예로 표시된 항목이 아직 없어요.</div>'}</div>`})():''}
     ${editingNew?formHTML(c,{}):''}
@@ -50,7 +50,7 @@ function itemHTML(i,c,mode){
     <div style="min-width:0"><div class="t"><button class="tbtn" data-expand="${i.id}" aria-expanded="${open}"><span class="caret" aria-hidden="true"></span>${esc(c.title(i.f)||'(제목 없음)')}</button></div>
       <div class="meta">${meta}</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"><span class="chip ${rv[0]}">${rv[1]}</span>${chips.map(x=>`<span class="chip ${x[0]}">${esc(x[1])}</span>`).join('')}</div></div>
-    <div class="acts">${mode!=='rev'?`${i.cat==='grant'&&(i.f.grole==='공동연구원'||i.f.knu==='아니오')?`<button class="btn sm" data-shareform="${i.id}">지분확인서</button>`:''}${S.data.uploadUrl?`<button class="btn sm" data-attach="${i.id}">증빙 첨부</button>`:''}<button class="btn sm" data-edit="${i.id}">수정</button><button class="btn ghost sm" data-del="${i.id}">삭제</button>`:''}</div>
+    <div class="acts">${mode!=='rev'?`${i.cat==='grant'&&(i.f.grole==='공동연구원'||i.f.knu==='아니오')?`<button class="btn sm" data-shareform="${i.id}">지분확인서</button>`:''}${S.data.uploadUrl?`<button class="btn sm" data-attach="${i.id}" title="민감한 개인정보는 가리고 올려 주세요">증빙 첨부</button>`:''}<button class="btn sm" data-edit="${i.id}">수정</button><button class="btn ghost sm" data-del="${i.id}">삭제</button>`:''}</div>
     ${open?detailHTML(i,c):''}
     ${(i.files||[]).length?`<div class="files"><span>증빙</span>${i.files.map(x=>`<span><a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.n)}</a>${mode!=='rev'?`<button class="btn ghost sm" data-unfile="${i.id}" data-fid="${esc(x.id)}" aria-label="${esc(x.n)} 연결 해제">×</button>`:''}</span>`).join('')}</div>`:''}
     ${i.f.note?`<div class="note" style="color:var(--ink)"><b>비고</b> ${esc(i.f.note)}</div>`:''}
