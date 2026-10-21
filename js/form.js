@@ -56,7 +56,7 @@ function itemHTML(i,c,mode){
     ${i.f.note?`<div class="note" style="color:var(--ink)"><b>비고</b> ${esc(i.f.note)}</div>`:''}
     ${i.memo?`<div class="note" style="color:var(--mute)">참고${i.pre&&i.cat==='paper'?' (중간평가 1차조사, 2025년 기준)':''}: ${esc(i.memo)}${i.cat==='paper'?` · JCR 상위 ${i.f.jcr?esc(i.f.jcr)+'%':'% 미입력'}`:''}</div>`:''}
     ${i.rv.s==='fix'&&mode==='prof'?`<div class="note">담당 교수 의견: ${esc(i.rv.c)}</div>`:''}
-    ${mode!=='prof'?`<div class="review"><button class="btn sm ok" data-rv="ok" data-id="${i.id}">확인</button><input id="c-${i.id}" placeholder="수정 요청 내용" value="${esc(i.rv.s==='fix'?i.rv.c:'')}"><button class="btn sm warn" data-rv="fix" data-id="${i.id}">수정 요청</button></div>`:''}
+    ${mode!=='prof'?`<div class="review">${i.rv.s==='ok'?`<button class="btn sm" data-rv="none" data-id="${i.id}">확인 취소</button>`:`<button class="btn sm ok" data-rv="ok" data-id="${i.id}">확인</button>`}<input id="c-${i.id}" placeholder="수정 요청 내용" value="${esc(i.rv.s==='fix'?i.rv.c:'')}"><button class="btn sm warn" data-rv="fix" data-id="${i.id}">수정 요청</button></div>`:''}
   </div>`;
 }
 

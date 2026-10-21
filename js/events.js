@@ -20,8 +20,8 @@ document.addEventListener('click',async e=>{
     if(!b.dataset.confirm){b.dataset.confirm=1;b.textContent='삭제 확인';b.classList.add('warn');return}
     try{await db.doc('items/'+b.dataset.del).delete();S.data.items=S.data.items.filter(x=>x.id!==b.dataset.del);await touchProf(pid);toast('삭제했어요')}catch(er){fail(er)} render();return}
   if(b.dataset.rv){const it=S.data.items.find(x=>x.id===b.dataset.id);let rv;
-    if(b.dataset.rv==='fix'){const c=$('#c-'+it.id).value.trim();if(!c){toast('수정 요청 내용을 적어 주세요');$('#c-'+it.id).focus();return}rv={s:'fix',c}}else rv={s:'ok',c:''};
-    try{await db.doc('items/'+it.id).update({rv,reviewedAt:TS()});it.rv=rv;toast(rv.s==='ok'?'확인 처리했어요':'수정 요청을 남겼어요')}catch(er){fail(er)} render();return}
+    if(b.dataset.rv==='fix'){const c=$('#c-'+it.id).value.trim();if(!c){toast('수정 요청 내용을 적어 주세요');$('#c-'+it.id).focus();return}rv={s:'fix',c}}else rv={s:b.dataset.rv==='none'?'none':'ok',c:''};
+    try{await db.doc('items/'+it.id).update({rv,reviewedAt:TS()});it.rv=rv;toast({ok:'확인 처리했어요',fix:'수정 요청을 남겼어요',none:'확인을 취소했어요'}[rv.s])}catch(er){fail(er)} render();return}
   if(b.dataset.ask){const t=$('#q-new'),q=t.value.trim();if(!q){toast('질문을 적어 주세요');t.focus();return}
     const x={prof:pid,cat:b.dataset.ask,q,by:S.name||'',at:TS(),a:'',aby:''};
     try{const ref=await db.collection('qna').add(x);S.data.qna.push(Object.assign({},x,{id:ref.id,at:new Date()}));toast('질문을 남겼어요. 답변이 달리면 여기에 보여요')}catch(er){fail(er)} render();return}
