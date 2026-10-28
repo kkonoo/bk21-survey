@@ -41,7 +41,7 @@ function showNoKey(msg){
 /* ===== 데이터 읽기 ===== */
 const ROLE_OLD={'제1저자':'1저자','교신저자':'교신','기타저자':'공저자','1저자(공동)':'1저자','교신(공동)':'교신'};
 const ROLE_REDO=['공동 제1·교신','주저자 (제1/교신 미구분)'];
-const docOf=d=>{const x=Object.assign({id:d.id},d.data());if(x.cat==='roster'&&x.f&&STATUS_OLD[x.f.status]&&!STATUS_OF(x.f.degree).includes(x.f.status))x.f.status=STATUS_OLD[x.f.status];if(x.cat==='roster'&&x.f&&MED_OLD[x.f.med])x.f.med=MED_OLD[x.f.med];if(x.cat==='paper'&&x.f&&ROLE_OLD[x.f.role])x.f.role=ROLE_OLD[x.f.role];if(x.cat==='roster'&&x.pre&&x.f&&x.f.bk===undefined)x.f.bk='예';return x};
+const docOf=d=>{const x=Object.assign({id:d.id},d.data());if(x.cat==='roster'&&x.f&&STATUS_OLD[x.f.status]&&!STATUS_OF(x.f.degree).includes(x.f.status))x.f.status=STATUS_OLD[x.f.status];if(x.cat==='roster'&&x.f&&MED_OLD[x.f.med])x.f.med=MED_OLD[x.f.med];if(x.cat==='paper'&&x.f&&ROLE_OLD[x.f.role])x.f.role=ROLE_OLD[x.f.role];if(x.cat==='roster'&&x.pre&&x.f&&x.f.bk===undefined)x.f.bk='예';if(x.cat==='roster'&&x.f&&!x.f.bkever&&(x.f.bk==='예'||/4단계 BK 참여/.test(x.memo||'')))x.f.bkever='예';return x};
 async function loadCommon(){
   const [rv,cfg]=await Promise.all([db.collection('reviewers').get(),db.doc('config/app').get()]);
   S.data.reviewers=rv.docs.map(docOf).sort((a,b)=>a.id.localeCompare(b.id,undefined,{numeric:true}));

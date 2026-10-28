@@ -30,20 +30,21 @@ const yearBoxes=(k,f,cur)=>yearsOf(f,cur).map(y=>`<label>${y}<input type="number
 // 증빙 자료 개인정보 안내 (모든 항목 안내·안내 화면 공지·자동 채우기에 같이 씀)
 const PRIVACY_NOTE='🔒 증빙 자료는 <b>주민등록번호·외국인등록번호, 계좌번호, 휴대전화번호·집 주소, 환자 정보</b> 같은 민감한 개인정보를 <b>가리고</b> 올려 주세요.';
 const CATS = [
-  {key:'roster', name:'지도학생 및 연구원 명단', table:'첨부 2·3·4 · 2-2', rule:'<b>논문보다 먼저 입력해 주세요</b> — 논문 탭의 지도학생 주저자를 이 명단에서 고릅니다. 4단계 BK 참여학생은 미리 채워 두었으니 <b>졸업생 진로 확인</b>과 <b>박사후연구원·학부연구생 추가</b>부터 해 주세요.<br><b>2021년 이후</b> 지도한 학생 전원 (재학·수료·졸업), 박사후연구원, 그리고 연구실의 <b>학부연구생·학석 연계과정생</b> (5단계는 학·석·박 연계를 봅니다). <b>4단계 BK 참여학생 명단(2020.2–2026.2학기)</b>으로 미리 채웠으니 지금 명단에 없는 학생(졸업생의 <b>졸업 연월·진로</b>, 상태)을 고쳐 주시고, BK에 참여하지 않은 대학원생과 <b>박사후연구원·연구교수·연구원·학부연구생·입학 예정 인턴</b>은 <b>+ 추가</b>로 넣어 주세요. 우리 대학원에 들어올 예정이면 (석사를 마친 경우도) <b>입학 예정 인턴</b>, 입학 계획 없이 계약해 일하면 <b>석사·학사연구원</b>으로 넣어 주세요. 학생마다 <b>의학 계열</b>(의대생·의사 여부, 의사과학자 양성 사업용)도 골라 주세요. 학생 수가 장학금 규모와 참여교수 결정의 기준이 됩니다. <b>BK 참여 여부와 관계없이 모두 넣고</b>, 지금 BK 참여 중인지만 따로 표시해 주세요 (26.2학기 BK 참여 중인 학생은 \'예\'로 되어 있어요).',
+  {key:'roster', name:'지도학생 및 연구원 명단', table:'첨부 2·3·4 · 2-2', rule:'<b>논문보다 먼저 입력해 주세요</b> — 논문 탭의 지도학생 주저자를 이 명단에서 고릅니다. 4단계 BK 참여학생은 미리 채워 두었으니 <b>졸업생 진로 확인</b>과 <b>박사후연구원·학부연구생 추가</b>부터 해 주세요.<br><b>2021년 이후</b> 지도한 학생 전원 (재학·수료·졸업), 박사후연구원, 그리고 연구실의 <b>학부연구생·학석 연계과정생</b> (5단계는 학·석·박 연계를 봅니다). <b>4단계 BK 참여학생 명단(2020.2–2026.2학기)</b>으로 미리 채웠으니 지금 명단에 없는 학생(졸업생의 <b>졸업 연월·진로</b>, 상태)을 고쳐 주시고, BK에 참여하지 않은 대학원생과 <b>박사후연구원·연구교수·연구원·학부연구생·입학 예정 인턴</b>은 <b>+ 추가</b>로 넣어 주세요. 우리 대학원에 들어올 예정이면 (석사를 마친 경우도) <b>입학 예정 인턴</b>, 입학 계획 없이 계약해 일하면 <b>석사·학사연구원</b>으로 넣어 주세요. 학생마다 <b>의학 계열</b>(의대생·의사 여부, 의사과학자 양성 사업용)도 골라 주세요. 학생 수가 장학금 규모와 참여교수 결정의 기준이 됩니다. <b>BK 참여 여부와 관계없이 모두 넣고</b>, 지금 BK 참여 중인지만 따로 표시해 주세요 (26.2학기 BK 참여 중인 학생은 \'예\'로 되어 있어요). 4단계 BK에 한 번이라도 참여한 학생은 <b>BK 참여 이력</b>이 \'예\'로 되어 있어요.',
    fields:[
     {k:'name',l:'이름',t:'text',req:1},
     {k:'sid',l:'학번',t:'text'},
     {k:'degree',l:'과정',t:'select',o:'degree',req:1},
     {k:'status',l:'상태',t:'select',of:f=>STATUS_OF(f.degree),req:1},
     {k:'bk',l:'BK 참여 (현재)',t:'yn'},
+    {k:'bkever',l:'BK 참여 이력',t:'yn'},
     {k:'admit',l:'입학/임용 연월',t:'text',ph:'2023.03'},
     {k:'grad',l:'졸업/중단/종료 연월',t:'text',ph:'2026.02'},
     {k:'foreign',l:'외국인',t:'yn'},
     {k:'med',l:'의학 계열',t:'yn'},
     {k:'ckind',l:'졸업 후 진로',t:'select',o:'career'},
     {k:'career',l:'진로 기관 · 직위',t:'text',full:1,ph:'한국뇌연구원 연수연구원'},
-   ], title:f=>f.name+(f.sid?' · '+f.sid:''), meta:f=>[f.degree, f.status, f.admit&&((degGroup(f.degree)==='연구원'?'임용 ':'입학 ')+f.admit), f.grad&&((f.status==='중단'?'중단 ':/종료$/.test(f.status)?'종료 ':'졸업 ')+f.grad), f.career], chips:f=>[f.bk==='예'&&['rep','BK 참여'], f.status&&!STATUS_OF(f.degree).includes(f.status)&&['fix','상태 다시 선택'], f.foreign==='예'&&['pre','외국인'], f.med==='예'&&['pre','의학 계열'], f.status==='졸업'&&!f.ckind&&['fix','진로 미입력'], degGroup(f.degree)==='대학원'&&!(f.sid||'').trim()&&['fix','학번 미입력']]},
+   ], title:f=>f.name+(f.sid?' · '+f.sid:''), meta:f=>[f.degree, f.status, f.admit&&((degGroup(f.degree)==='연구원'?'임용 ':'입학 ')+f.admit), f.grad&&((f.status==='중단'?'중단 ':/종료$/.test(f.status)?'종료 ':'졸업 ')+f.grad), f.career], chips:f=>[f.bk==='예'&&['rep','BK 참여'], f.bk!=='예'&&f.bkever==='예'&&['pre','BK 참여 이력'], f.status&&!STATUS_OF(f.degree).includes(f.status)&&['fix','상태 다시 선택'], f.foreign==='예'&&['pre','외국인'], f.med==='예'&&['pre','의학 계열'], f.status==='졸업'&&!f.ckind&&['fix','진로 미입력'], degGroup(f.degree)==='대학원'&&!(f.sid||'').trim()&&['fix','학번 미입력']]},
   {key:'paper', name:'논문', table:'3-2 · 3-3', rule:'<b>2021.1 이후</b> 게재된 SCI(E)·SSCI·A&HCI·등재(후보)·Scopus 논문 전체 (경북대 소속 표기, 권·호·쪽이 있는 논문). DOI만 넣고 <b>자동 채우기</b>를 누르세요. <b>IF와 JCR 상위 %를 S2Journal·JCR에서 확인해 넣어 주세요</b> (참고 칸의 IF는 중간평가 1차조사 값, 2025년 기준) (출판 당시: 7–12월 출판은 전년도, 1–6월 출판은 전전년도 JCR). 신청서는 <b>대표업적 1인당 3건</b>(정성 70%)과 <b>전체 논문</b>(정량 30%)을 함께 봅니다.',
    fields:[
     {k:'doi',l:'DOI',t:'doi',req:1,full:1},
@@ -226,7 +227,7 @@ const EX = {
     {kind:'외국 연구자 국내 방문 (온라인 포함)',inst:'미국 Stanford University / Dr. John Smith',period:'2024.10.15',topic:'공동연구 논의 및 대학원생 세미나 (온라인)',proof:'예'},
   ],
   roster:[
-    {name:'홍길동',sid:'2021xxxxxx',degree:'박사',status:'졸업',bk:'아니오',admit:'2021.03',grad:'2025.08',foreign:'아니오',ckind:'취업',career:'한국뇌연구원 박사후연구원'},
+    {name:'홍길동',sid:'2021xxxxxx',degree:'박사',status:'졸업',bk:'아니오',bkever:'예',admit:'2021.03',grad:'2025.08',foreign:'아니오',ckind:'취업',career:'한국뇌연구원 박사후연구원'},
     {name:'김철수',sid:'2024xxxxxx',degree:'석사',status:'재학',bk:'예',admit:'2024.03',foreign:'아니오'},
     {name:'Nguyen Van A',sid:'2023xxxxxx',degree:'석박통합',status:'재학',bk:'예',admit:'2023.09',foreign:'예'},
     {name:'이영희',sid:'2022xxxxxx',degree:'석사',status:'수료',bk:'예',admit:'2022.03',foreign:'아니오',med:'예'},
