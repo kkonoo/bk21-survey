@@ -6,20 +6,18 @@
 <title>BK21 실적 입력</title>
 <meta name="robots" content="noindex">
 <script>try{const t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(e){}</script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="css/style.css?v=2026102101">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="css/style.css?v=2026102801">
 </head>
 <body>
-<div class="wrap">
-  <header class="top">
-    <div class="brand"><h1>BK21 실적 입력</h1><small>경북대 의과학과 교육연구단 · 5단계 준비</small></div>
+<header class="top">
+  <div class="wrap">
+    <div class="brand"><span class="mark" aria-hidden="true">BK</span><div><h1>BK21 실적 입력</h1><small>경북대 의과학과 교육연구단 · 5단계 준비</small></div></div>
     <div class="seg" id="seg" role="group" aria-label="화면 선택" hidden></div>
     <div class="who" id="who"></div>
-  </header>
-  <main id="app"><div class="empty">불러오는 중…</div></main>
-</div>
+  </div>
+</header>
+<main class="wrap" id="app"><div class="empty">불러오는 중…</div></main>
 <div class="toast" id="toast" hidden></div>
 <input type="file" id="filepick" hidden>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -33,7 +31,7 @@
 <script src="js/promo.js?v=2026102101"></script>
 <script src="js/hex.js?v=2026102101"></script>
 <script src="js/recap.js?v=2026102101"></script>
-<script src="js/board.js?v=2026102101"></script>
+<script src="js/board.js?v=2026102801"></script>
 <script src="js/form.js?v=2026102101"></script>
 <script src="js/qna.js?v=2026102101"></script>
 <script src="js/admin.js?v=2026102101"></script>
