@@ -76,7 +76,7 @@ document.addEventListener('change',async e=>{
   if(t.id==='filepick'){const f=t.files[0];if(f&&S.attachFor)await uploadFile(S.attachFor,f);return}
   if(t.id==='rg-from'||t.id==='rg-to'){S.range[t.id==='rg-from'?'from':'to']=t.value;S.tsv='';return}
   if(t.id==='top-pick'){const i=S.data.items.find(x=>x.id===t.value);if(!i)return;const f=i.f,el=t.closest('form').elements;
-    const type=i.cat==='paper'?'논문':({등록특허:'특허',기술이전:'기술이전',저서:'저서'}[f.kind]||'기타');
+    const type=i.cat==='paper'?'논문':({등록특허:'특허',기술이전:'기술이전',저서:'저서',북챕터:'북챕터'}[f.kind]||'기타');
     const out=i.cat==='paper'?[f.title,f.journal&&(f.journal+(f.ym?' ('+f.ym+')':'')),f.vol,f.pages,f.doi&&('DOI '+f.doi)].filter(Boolean).join('. '):[f.kind,f.title,f.country,f.number].filter(Boolean).join(' · ');
     el.ttype.value=type; el.year.value=String(f.ym||f.date||'').slice(0,4); el.output.value=out;
     if(f.merit&&!el.desc.value.trim()){el.desc.value=f.merit;el.desc.dispatchEvent(new Event('input',{bubbles:true}))}

@@ -5,7 +5,7 @@ const semOf=ym=>{const y=Math.floor(ym/100),m=ym%100;return !m?'':m>=3&&m<=8?y+'
 const periodsOf=ym=>ym?[String(Math.floor(ym/100)),semOf(ym)].filter(Boolean):[];
 const pLabel=k=>k.includes('-')?`${k.slice(0,4)}년 ${k.slice(5)}학기 (${k.endsWith('1')?'3–8월':'9월–이듬해 2월'})`:k+'년';
 const won=v=>{v=parseFloat(v)||0;return v>=100000?(Math.round(v/10000)/10).toLocaleString()+'억원':Math.round(v/1000).toLocaleString()+'백만원'}; // 천원 단위
-const RECAP_N=[['p','논문','편'],['p10','JCR 상위 10% 논문','편'],['pi','국제공동 논문','편'],['g','신규 연구과제','건'],['gm','연구비 입금',''],['pat','등록특허','건'],['tt','기술이전','건'],['su','창업','건'],['bk','저서','건'],
+const RECAP_N=[['p','논문','편'],['p10','JCR 상위 10% 논문','편'],['pi','국제공동 논문','편'],['g','신규 연구과제','건'],['gm','연구비 입금',''],['pat','등록특허','건'],['tt','기술이전','건'],['su','창업','건'],['bk','저서','건'],['bc','북챕터','건'],
   ['phd','박사 배출','명'],['ms','석사 배출','명'],['sa','지도학생 수상','건'],['si','학생 국제학회 발표','건'],['ia','국제학회 수상','건'],['it','초청강연·기조연설','건'],['ed','교육 실적','건'],['so','산업·사회 기여·국내 활동','건']];
 const RECAP_HL=[['paper','JCR 상위 10% 논문',0],['grant','신규 연구과제 (연구책임자, 총 연구비 큰 순 5건)',5],['tech','기술이전·창업',0],['award','수상',0],['talk','초청강연·기조연설',0]];
 function recapBuild(at,ym0){
@@ -17,7 +17,7 @@ function recapBuild(at,ym0){
       if(j<=10){add(ym,'p10');hl.push({g:'paper',ym,t:f.title||'',s:[f.journal,'JCR 상위 '+j+'%',f.student&&'학생 주저자'].filter(Boolean).join(' · '),o:j})}}
     if(i.cat==='grant'){Object.entries(f.paid||{}).forEach(([y,v])=>{const n=parseFloat(v);if(n)add(+y*100,'gm',n)}); // 입금은 교수별 몫이라 중복 없이 모두 더함
       if(!dup('grant',nk(f.title))){add(ym,'g');if(f.grole==='연구책임자'){const t=parseFloat(f.total)||0;hl.push({g:'grant',ym,t:f.title||'',s:[f.ministry,f.program,t&&won(t)].filter(Boolean).join(' · '),o:-t})}}}
-    if(i.cat==='ip'&&!dup('ip',f.kind+nk(f.title))){const k={등록특허:'pat',기술이전:'tt',창업:'su',저서:'bk'}[f.kind];if(k)add(ym,k);
+    if(i.cat==='ip'&&!dup('ip',f.kind+nk(f.title))){const k={등록특허:'pat',기술이전:'tt',창업:'su',저서:'bk',북챕터:'bc'}[f.kind];if(k)add(ym,k);
       if(f.kind==='기술이전'||f.kind==='창업')hl.push({g:'tech',ym,t:f.title||'',s:[f.kind,parseFloat(f.amount)>0&&won(f.amount)].filter(Boolean).join(' · '),o:-ym})}
     if(i.cat==='roster'&&f.status==='졸업'&&!dup('grad',nk(f.sid)||nk(f.name)+f.degree)){const g=ymOf(f.grad);if(f.degree==='석사')add(g,'ms');else if(['박사','석박통합'].includes(f.degree))add(g,'phd')}
     if(i.cat==='stu'&&!dup('stu',nk(f.student)+f.kind+nk(f.title))){if(/^수상/.test(f.kind||'')){add(ym,'sa');hl.push({g:'award',ym,t:f.title||'',s:'지도학생 '+f.kind,o:-ym})}if(f.kind==='학회 발표 (국제)')add(ym,'si')}

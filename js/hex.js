@@ -3,7 +3,7 @@
 // 축마다 연평균 값을 내고, 관리자가 게시한 학과 기준(10·25·50·75·90% 값)에 대어 0–100점(학과 안 위치)으로 바꾼다
 const HEX=[['paper','논문','편/년'],['grant','연구비','백만원/년'],['ind','산학·사회','점/년'],['stu','학생지도','점'],['edu','교육','점/년'],['intl','국제화','점/년']];
 const HEX_Q=[10,25,50,75,90];
-const IPW={기술이전:2,창업:2}; // 나머지(등록특허·저서)는 1점
+const IPW={기술이전:2,창업:2}; // 나머지(등록특허·저서·북챕터)는 1점
 const NONGRAD=DEGREE_GROUPS.filter(g=>g[0]!=='대학원').flatMap(g=>g[1]); // 대학원생이 아닌 과정 (학부·예정, 연구원)
 const nowYM=()=>{const d=new Date();return d.getFullYear()*100+d.getMonth()+1};
 const ymText=ym=>Math.floor(ym/100)+(ym%100?'.'+String(ym%100).padStart(2,'0'):'');
@@ -28,7 +28,7 @@ function hexRaw(p,end){
   const d={
     paper:`주저자 ${P.filter(x=>x.main).length}편 · 공저자 ${P.filter(x=>!x.main).length}편 · JCR 상위 5% ${P.filter(x=>x.j!==null&&x.j<=5).length}편`,
     grant:`과제 ${of('grant').length}건 · 입금 합계 ${Math.round(paid).toLocaleString()}백만원`,
-    ind:`등록특허 ${ipn('등록특허')} · 기술이전 ${ipn('기술이전')} · 창업 ${ipn('창업')} · 저서 ${ipn('저서')} · 산업·사회 기여·국내 활동 ${of('soc').length}`,
+    ind:`등록특허 ${ipn('등록특허')} · 기술이전 ${ipn('기술이전')} · 창업 ${ipn('창업')} · 저서 ${ipn('저서')} · 북챕터 ${ipn('북챕터')} · 산업·사회 기여·국내 활동 ${of('soc').length}`,
     stu:`재학·수료 대학원생 ${cur}명 · 졸업 석사 ${ms}·박사 ${phd}명 · 학생 실적 ${of('stu').length}건 · 학생 주저자 논문 ${stuP}편`,
     edu:`대학원 강의 ${L.length}과목 ${Math.round(cr*10)/10}학점 · 교육역량 ${of('edu').length}건`,
     intl:`국제학술활동 ${of('intl').length} · 국제공동연구 ${of('collab').length+ia} (논문·특허 ${ia} 포함) · 외국기관 교류 ${of('ex').length}`};
@@ -61,7 +61,7 @@ function hexPanel(p){
   </div>
   <div class="panel hex" style="margin-top:16px"><div class="head"><h2 style="font-size:17px">축별 내역</h2><span class="msg">담당 교수가 확인한 실적 ${r.ok} / ${r.n}건 · ${ymText(r.s)}부터 ${fmt(r.y)}년</span></div>
     <div class="tablebox"><table><thead><tr><th>축</th><th class="num">내 값</th><th class="num">학과 중앙값</th><th class="num">점수</th><th>반영 내역</th></tr></thead><tbody>${rows}</tbody></table></div>
-    <p class="msg" style="margin-top:12px">계산 규칙: <b>논문</b> 주저자 1/n편(주저자 수로 나눔)·공저자 0.2편, JCR 상위 5% 이내는 2배 · <b>연구비</b> 연도별 입금액 · <b>산학·사회</b> 등록특허·저서·산업·사회 기여·국내 활동 1점, 기술이전·창업 2점 · <b>학생지도</b> 지금 재학·수료 중인 대학원생 1명당 1점 + 석사 졸업 1점·박사 졸업 2점·학생 실적 1점·학생 주저자 논문 2점의 연평균 · <b>교육</b> 대학원 강의 학점(영어 강의 1.5배) + 교육역량 1건 3점 · <b>국제화</b> 국제학술활동·국제공동연구(국제 논문·특허 포함)·외국기관 교류 1건 1점. 학생지도의 재학생 수 말고는 모두 <b>2021.1과 국내 최초 임용일 중 늦은 달부터의 연평균</b>입니다.</p>
+    <p class="msg" style="margin-top:12px">계산 규칙: <b>논문</b> 주저자 1/n편(주저자 수로 나눔)·공저자 0.2편, JCR 상위 5% 이내는 2배 · <b>연구비</b> 연도별 입금액 · <b>산학·사회</b> 등록특허·저서·북챕터·산업·사회 기여·국내 활동 1점, 기술이전·창업 2점 · <b>학생지도</b> 지금 재학·수료 중인 대학원생 1명당 1점 + 석사 졸업 1점·박사 졸업 2점·학생 실적 1점·학생 주저자 논문 2점의 연평균 · <b>교육</b> 대학원 강의 학점(영어 강의 1.5배) + 교육역량 1건 3점 · <b>국제화</b> 국제학술활동·국제공동연구(국제 논문·특허 포함)·외국기관 교류 1건 1점. 학생지도의 재학생 수 말고는 모두 <b>2021.1과 국내 최초 임용일 중 늦은 달부터의 연평균</b>입니다.</p>
     ${B?`<p class="msg">학과 기준: ${esc(B.at)} 게시 · 확인된 실적이 있는 교수 ${B.n}명</p>`:''}
   </div>`;
 }

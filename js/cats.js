@@ -11,17 +11,17 @@ const FIELD_OPTS = {
   role: ['1저자','교신','1저자·교신','공저자'],
   gtype: ['정부 (지자체 포함)','산업체 (국내)','해외기관'],
   grole: ['연구책임자','세부(위탁)과제 책임자','공동연구원'],
-  ipkind: ['등록특허','기술이전','창업','저서'],
+  ipkind: ['등록특허','기술이전','창업','저서','북챕터'],
   edukind: ['대학원 교육용 저서·book chapter','번역서','교육 관련 논문','교육 수상 (교외)','MOOC·KMOOC·OCW·PBL','신규 교과목 개발·개설'],
   socfields: ['정책 기여','거버넌스 구축','미래/글로벌 대응','기업현안 해결','인력 재교육','기타'],
   sockind: ['정부·지자체 위원회·정책 자문','학회 임원 (학회장·이사·위원)','RB·CRB 등 평가위원','국내 학술지 편집위원','국내 초청강연·기조연설·좌장','국내 학회 수상','국내 공동연구 (타 기관)','국내 기관 교류·연수','기업 자문·기술 지원','재교육·대중 강연','기타'],
   intlkind: ['국제학회 수상','초청강연','기조연설','좌장','위원회','국제학술지 편집위원','국제 저술'],
   exkind: ['해외 기관 연수','외국 연구자 국내 방문 (온라인 포함)'],
-  stukind: ['학회 발표 (국제)','학회 발표 (국내)','특허·기술이전·창업','수상 (교내)','수상 (교외·국내)','수상 (국제)','해외 연구실 공동연구 (15일 이상)'],
+  stukind: ['학회 발표 (국제)','학회 발표 (국내)','특허·기술이전·창업','수상 (교내)','수상 (교외·국내)','수상 (국제)','해외 연구실 공동연구 (15일 이상)','기타 학술 활동'],
   degree: DEGREE_GROUPS.flatMap(g=>g[1]),
   career: ['취업','진학','창업','입대','미취업','기타'],
   dept: ['의과학과 대학원','타 학과 대학원'],
-  toptype: ['논문','특허','저서','기술이전','기타'],
+  toptype: ['논문','특허','저서','북챕터','기술이전','기타'],
 };
 const YEARS = Array.from({length:Math.max(2026,new Date().getFullYear())-2020},(_,k)=>String(2021+k));
 // 연구비 연도별 입금액 칸: 시작~종료 연도 중 2021년부터 올해까지 (이미 값이 있는 연도는 범위 밖이어도 남김)
@@ -30,7 +30,7 @@ const yearBoxes=(k,f,cur)=>yearsOf(f,cur).map(y=>`<label>${y}<input type="number
 // 증빙 자료 개인정보 안내 (모든 항목 안내·안내 화면 공지·자동 채우기에 같이 씀)
 const PRIVACY_NOTE='🔒 증빙 자료는 <b>주민등록번호·외국인등록번호, 계좌번호, 휴대전화번호·집 주소, 환자 정보</b> 같은 민감한 개인정보를 <b>가리고</b> 올려 주세요.';
 const CATS = [
-  {key:'roster', name:'지도학생 및 연구원 명단', table:'첨부 2·3·4 · 2-2', rule:'<b>논문보다 먼저 입력해 주세요</b> — 논문 탭의 지도학생 주저자를 이 명단에서 고릅니다. 4단계 BK 참여학생은 미리 채워 두었으니 <b>졸업생 진로 확인</b>과 <b>박사후연구원·학부연구생 추가</b>부터 해 주세요.<br><b>2021년 이후</b> 지도한 학생 전원 (재학·수료·졸업), 박사후연구원, 그리고 연구실의 <b>학부연구생·학석 연계과정생</b> (5단계는 학·석·박 연계를 봅니다). <b>4단계 BK 참여학생 명단(2020.2–2026.2학기)</b>으로 미리 채웠으니 지금 명단에 없는 학생(졸업생의 <b>졸업 연월·진로</b>, 상태)을 고쳐 주시고, BK에 참여하지 않은 대학원생과 <b>박사후연구원·연구교수·연구원·학부연구생·입학 예정 인턴</b>은 <b>+ 추가</b>로 넣어 주세요. 우리 대학원에 들어올 예정이면 (석사를 마친 경우도) <b>입학 예정 인턴</b>, 입학 계획 없이 계약해 일하면 <b>석사·학사연구원</b>으로 넣어 주세요. 학생마다 <b>의학 계열</b>(의대생·의사 여부, 의사과학자 양성 사업용)도 골라 주세요. 학생 수가 장학금 규모와 참여교수 결정의 기준이 됩니다. <b>BK 참여 여부와 관계없이 모두 넣고</b>, 지금 BK 참여 중인지만 따로 표시해 주세요 (26.2학기 BK 참여 중인 학생은 \'예\'로 되어 있어요). 4단계 BK에 한 번이라도 참여한 학생은 <b>BK 참여 이력</b>이 \'예\'로 되어 있어요.',
+  {key:'roster', name:'지도학생 및 연구원 명단', table:'첨부 2·3·4 · 2-2', rule:'<b>논문보다 먼저 입력해 주세요</b> — 논문 탭의 지도학생 주저자를 이 명단에서 고릅니다. 4단계 BK 참여학생은 미리 채워 두었으니 <b>졸업생 진로 확인</b>과 <b>박사후연구원·학부연구생 추가</b>부터 해 주세요.<br><b>2021년 이후</b> 지도한 학생 전원 (재학·수료·졸업), 박사후연구원, 그리고 연구실의 <b>학부연구생·학석 연계과정생</b> (5단계는 학·석·박 연계를 봅니다). <b>4단계 BK 참여학생 명단(2020.2–2026.2학기)</b>으로 미리 채웠으니 지금 명단에 없는 학생(졸업생의 <b>졸업 연월·진로</b>, 상태)을 고쳐 주시고, BK에 참여하지 않은 대학원생과 <b>박사후연구원·연구교수·연구원·학부연구생·입학 예정 인턴</b>은 <b>+ 추가</b>로 넣어 주세요. 우리 대학원에 들어올 예정이면 (석사를 마친 경우도) <b>입학 예정 인턴</b>, 입학 계획 없이 계약해 일하면 <b>석사·학사연구원</b>으로 넣어 주세요. 학생마다 <b>의학 계열</b>(의대생·의사 여부, 의사과학자 양성 사업용)도 골라 주세요. 학생 수가 장학금 규모와 참여교수 결정의 기준이 됩니다. <b>BK 참여 여부와 관계없이 모두 넣고</b>, 지금 BK 참여 중인지만 따로 표시해 주세요 (26.2학기 BK 참여 중인 학생은 \'예\'로 되어 있어요). 4단계 BK에 한 번이라도 참여한 학생은 <b>BK 참여 이력</b>이 \'예\'로 되어 있어요.<br>5단계는 취·창업률보다 <b>최근 5년 대표 진로 사례</b>를 중심으로 봅니다. 내세울 만한 졸업생은 <b>대표 진로 사례 추천</b>을 \'예\'로 하고 200자로 설명해 주세요.',
    fields:[
     {k:'name',l:'이름',t:'text',req:1},
     {k:'sid',l:'학번',t:'text'},
@@ -44,8 +44,10 @@ const CATS = [
     {k:'med',l:'의학 계열',t:'yn'},
     {k:'ckind',l:'졸업 후 진로',t:'select',o:'career'},
     {k:'career',l:'진로 기관 · 직위',t:'text',full:1,ph:'한국뇌연구원 연수연구원'},
-   ], title:f=>f.name+(f.sid?' · '+f.sid:''), meta:f=>[f.degree, f.status, f.admit&&((degGroup(f.degree)==='연구원'?'임용 ':'입학 ')+f.admit), f.grad&&((f.status==='중단'?'중단 ':/종료$/.test(f.status)?'종료 ':'졸업 ')+f.grad), f.career], chips:f=>[f.bk==='예'&&['rep','BK 참여'], f.bk!=='예'&&f.bkever==='예'&&['pre','BK 참여 이력'], f.status&&!STATUS_OF(f.degree).includes(f.status)&&['fix','상태 다시 선택'], f.foreign==='예'&&['pre','외국인'], f.med==='예'&&['pre','의학 계열'], f.status==='졸업'&&!f.ckind&&['fix','진로 미입력'], degGroup(f.degree)==='대학원'&&!(f.sid||'').trim()&&['fix','학번 미입력']]},
-  {key:'paper', name:'논문', table:'3-2 · 3-3', rule:'<b>2021.1 이후</b> 게재된 SCI(E)·SSCI·A&HCI·등재(후보)·Scopus 논문 전체 (경북대 소속 표기, 권·호·쪽이 있는 논문). DOI만 넣고 <b>자동 채우기</b>를 누르세요. <b>IF와 JCR 상위 %를 S2Journal·JCR에서 확인해 넣어 주세요</b> (참고 칸의 IF는 중간평가 1차조사 값, 2025년 기준) (출판 당시: 7–12월 출판은 전년도, 1–6월 출판은 전전년도 JCR). 신청서는 <b>대표업적 1인당 3건</b>(정성 70%)과 <b>전체 논문</b>(정량 30%)을 함께 봅니다.',
+    {k:'crep',l:'대표 진로 사례 추천 (졸업생)',t:'yn'},
+    {k:'cdesc',l:'대표 진로 사례 설명 (추천할 때만)',t:'area',max:200,full:1},
+   ], title:f=>f.name+(f.sid?' · '+f.sid:''), meta:f=>[f.degree, f.status, f.admit&&((degGroup(f.degree)==='연구원'?'임용 ':'입학 ')+f.admit), f.grad&&((f.status==='중단'?'중단 ':/종료$/.test(f.status)?'종료 ':'졸업 ')+f.grad), f.career], chips:f=>[f.bk==='예'&&['rep','BK 참여'], f.bk!=='예'&&f.bkever==='예'&&['pre','BK 참여 이력'], f.status&&!STATUS_OF(f.degree).includes(f.status)&&['fix','상태 다시 선택'], f.foreign==='예'&&['pre','외국인'], f.med==='예'&&['pre','의학 계열'], f.status==='졸업'&&!f.ckind&&['fix','진로 미입력'], f.crep==='예'&&['rep','대표 진로 사례'], f.crep==='예'&&!f.cdesc&&['fix','사례 설명 미작성'], degGroup(f.degree)==='대학원'&&!(f.sid||'').trim()&&['fix','학번 미입력']]},
+  {key:'paper', name:'논문', table:'3-2 · 3-3', rule:'<b>2021.1 이후</b> 게재된 SCI(E)·SSCI·A&HCI·등재(후보)·Scopus 논문 전체 (경북대 소속 표기, 권·호·쪽이 있는 논문). DOI만 넣고 <b>자동 채우기</b>를 누르세요. <b>IF와 JCR 상위 %를 S2Journal·JCR에서 확인해 넣어 주세요</b> (참고 칸의 IF는 중간평가 1차조사 값, 2025년 기준) (출판 당시: 7–12월 출판은 전년도, 1–6월 출판은 전전년도 JCR). 신청서는 <b>대표업적 1인당 3건</b>(정성 70%)과 <b>전체 논문</b>(정량 30%)을 함께 봅니다. <b>저서·북챕터</b>도 대표업적으로 낼 수 있어요 (특허·기술이전·창업·저서 탭에서 후보로 표시).',
    fields:[
     {k:'doi',l:'DOI',t:'doi',req:1,full:1},
     {k:'title',l:'논문 제목',t:'text',req:1,full:1},
@@ -82,11 +84,11 @@ const CATS = [
     {k:'rep',l:'대표 과제 후보',t:'yn'},
     {k:'paid',l:'연도별 입금액 (천원, 경북대 입금 기준)',t:'years',full:1},
    ], title:f=>f.title, meta:f=>[f.ministry, f.program, f.gtype, f.grole, f.start&&(f.start+' ~ '+(f.end||'')), f.total&&(Number(f.total).toLocaleString()+' 천원')], chips:f=>[f.rep==='예'&&['rep','대표 후보'], f.knu==='아니오'&&['fix','산단 미경유 — 지분확인서 필요'], f.share&&['pre','지분 '+f.share+'%'], !(f.paid&&Object.values(f.paid).some(Boolean))&&['fix','연도별 입금액 미입력']]},
-  {key:'ip', name:'특허·기술이전·창업·저서', table:'3-4', rule:'특허는 <b>등록특허만</b> (출원 제외, 기관 명의에 본인이 발명자). 기술이전은 <b>대학 명의</b>만, 0원도 입력 가능. 신청서에는 <b>1인당 2건</b>을 우수성과 함께 냅니다.',
+  {key:'ip', name:'특허·기술이전·창업·저서', table:'3-4', rule:'특허는 <b>등록특허만</b> (출원 제외, 기관 명의에 본인이 발명자). 기술이전은 <b>대학 명의</b>만, 0원도 입력 가능. 신청서에는 <b>1인당 2건</b>을 우수성과 함께 냅니다. <b>저서와 북챕터는 구분을 나눠</b> 넣어 주세요. 둘 다 논문과 함께 <b>대표업적(1인당 3건)</b> 후보로 고를 수 있어요.',
    fields:[
     {k:'kind',l:'구분',t:'select',o:'ipkind',req:1},
     {k:'date',l:'등록·계약·출판일',t:'date',req:1},
-    {k:'title',l:'명칭 (발명의 명칭·기술명·저서명)',t:'text',req:1,full:1},
+    {k:'title',l:'명칭 (발명의 명칭·기술명·저서명, 북챕터는 장 제목·책 제목)',t:'text',req:1,full:1},
     {k:'country',l:'등록 국가',t:'text',ph:'한국'},
     {k:'number',l:'등록번호 / ISBN',t:'text'},
     {k:'holder',l:'등록 명의 (기관)',t:'text',ph:'경북대학교 산학협력단'},
@@ -95,16 +97,16 @@ const CATS = [
     {k:'intl',l:'국외 공동발명·공동연구',t:'yn',help:'예로 하면 국제공동연구 탭에 자동으로 들어가요'},
     {k:'partner',l:'국외 공동연구자 (국제일 때)',t:'text'},
     {k:'pinst',l:'국가 / 소속기관 (국제일 때)',t:'text'},
-    {k:'rep',l:'신청서 제출 후보',t:'yn'},
+    {k:'rep',l:'신청서 제출 후보 (저서·북챕터는 대표업적 후보)',t:'yn'},
     {k:'merit',l:'우수성 (후보일 때만)',t:'area',max:500,full:1},
-   ], title:f=>f.title, meta:f=>[f.kind, f.country, f.number, f.date, f.amount&&(Number(f.amount).toLocaleString()+' 천원')], chips:f=>[f.rep==='예'&&['rep','제출 후보'], f.intl==='예'&&['pre','국제공동']]},
-  {key:'top', name:'대표 업적 (최근 10년)', table:'3-5', rule:'교육연구단의 <b>학문적 수월성</b>을 보여줄 최근 10년(2017~) 최고 업적. 교육연구단 전체에서 <b>3건</b>만 고르므로 교수님별 1건만 추천해 주세요. 없으면 비워 두셔도 됩니다.<br>글자 수 (공백 제외): <b>대표 연구업적물·저서·특허 우수성 각 500자</b>, <b>대표 취업사례 200자</b>.',
+   ], title:f=>f.title, meta:f=>[f.kind, f.country, f.number, f.date, f.amount&&(Number(f.amount).toLocaleString()+' 천원')], chips:f=>[f.rep==='예'&&['rep',['저서','북챕터'].includes(f.kind)?'대표업적 후보':'제출 후보'], f.intl==='예'&&['pre','국제공동']]},
+  {key:'top', name:'대표 업적 (최근 5년)', table:'3-5', rule:'교육연구단의 <b>학문적 수월성</b>을 보여줄 최근 5년(2021~) 최고 업적 (5단계는 연구역량 인정기간이 10년에서 5년으로 바뀌어요). 이미 넣은 2020년 이전 업적은 \'5년 밖\'으로 표시돼요. 교육연구단 전체에서 <b>3건</b>만 고르므로 교수님별 1건만 추천해 주세요. 없으면 비워 두셔도 됩니다.<br>글자 수 (공백 제외): <b>대표 연구업적물·저서·특허 우수성 각 500자</b>. 대표 진로 사례(200자)는 <b>지도학생 및 연구원 명단</b>에서 졸업생마다 추천해 주세요.',
    fields:[
     {k:'ttype',l:'종류',t:'select',o:'toptype',req:1},
     {k:'year',l:'연도',t:'text',ph:'2021',req:1},
     {k:'output',l:'업적 (논문 서지 또는 DOI)',t:'text',req:1,full:1},
     {k:'desc',l:'왜 대표 업적인가',t:'area',max:500,full:1},
-   ], title:f=>f.output, meta:f=>[f.ttype, f.year], chips:()=>[]},
+   ], title:f=>f.output, meta:f=>[f.ttype, f.year], chips:f=>[parseInt(f.year)<2021&&['fix','5년 밖']]},
   {key:'edu', name:'교육역량', table:'2-8', rule:'최근 5년 대학원 교육 관련 실적. 단순 PPT 모음 저서와 <b>교내 수상은 제외</b>. 1인당 <b>최대 2건</b>, 500자.',
    fields:[
     {k:'kind',l:'구분',t:'select',o:'edukind',req:1,full:1},
@@ -152,7 +154,7 @@ const CATS = [
     {k:'topic',l:'주제 · 내용',t:'text',full:1},
     {k:'proof',l:'증빙 있음',t:'yn'},
    ], title:f=>f.inst, meta:f=>[f.kind, f.period, f.topic], chips:f=>[f.proof!=='예'&&['fix','증빙 확인 필요']]},
-  {key:'stu', name:'지도학생 실적', table:'2-4 · 2-6 · 2-7 · 2-9', rule:'지도학생의 학회 발표, 특허·기술이전·창업, 수상(<b>교내·교외·국제</b>를 나눠 골라 주세요), 해외 연구실 공동연구(15일 이상). 학생 주저자 <b>논문은 논문 탭</b>에 표시하면 돼요. 학생은 명단에서 고릅니다.',
+  {key:'stu', name:'지도학생 실적', table:'2-4 · 2-6 · 2-7 · 2-9', rule:'<b>최근 5년(2021~)</b> 지도학생의 학회 발표, 특허·기술이전·창업, 수상(<b>교내·교외·국제</b>를 나눠 골라 주세요), 해외 연구실 공동연구(15일 이상). 5단계는 대학원생 연구성과를 논문·학회·특허 밖의 학술 활동까지 넓혀 보므로 <b>기타 학술 활동</b>(학생 연구과제 선정, 연구 데이터·코드 공개, 학술대회 학생 좌장·운영위원 등)도 넣어 주세요. 학생 주저자 <b>논문은 논문 탭</b>에 표시하면 돼요. 학생은 명단에서 고릅니다.',
    fields:[
     {k:'student',l:'학생',t:'student',req:1},
     {k:'kind',l:'구분',t:'select',o:'stukind',req:1},
@@ -179,11 +181,11 @@ const EX = {
     {kind:'등록특허',date:'2024-08-20',title:'알츠하이머병 진단용 바이오마커 조성물 및 이를 이용한 진단 방법',country:'한국',number:'10-2700000',holder:'경북대학교 산학협력단',inventors:'홍길동, 김철수',intl:'아니오',rep:'예',merit:'혈액 바이오마커로 조기 진단 정확도 90% 이상 ...'},
     {kind:'기술이전',date:'2025-02-10',title:'항염증 펩타이드 제조 기술',holder:'경북대학교 산학협력단',inventors:'홍길동',amount:'50000',intl:'아니오'},
     {kind:'창업',date:'2023-09-01',title:'(주)OO진단 — 교원창업 (대표 홍길동, 연구소기업)',country:'한국',number:'사업자 123-45-67890',intl:'아니오'},
-    {kind:'저서',date:'2022-03-15',title:'Single-Cell Genomics in Neuroscience (Springer, Chapter 7 집필)',country:'독일',number:'ISBN 978-3-000-00000-0',inventors:'Hong GD, Smith J',intl:'예',partner:'John Smith',pinst:'미국 / Stanford University'},
+    {kind:'북챕터',date:'2022-03-15',title:'Chapter 7. Microglial states at single-cell resolution — Single-Cell Genomics in Neuroscience (Springer)',country:'독일',number:'ISBN 978-3-000-00000-0',inventors:'Hong GD, Smith J',intl:'예',partner:'John Smith',pinst:'미국 / Stanford University',rep:'예',merit:'단일세포 분석을 신경과학 연구에 적용하는 방법을 정리한 Springer 전문서의 한 장을 국외 공동연구자와 함께 집필 ...'},
   ],
   top:[
     {ttype:'논문',year:'2022',output:'Hong GD et al. Cell. 2022;185(3):400-415. DOI 10.1016/j.cell.2022.00.000',desc:'세계 최초로 ... 를 규명하여 인용 300회 이상, 후속 연구의 표준 자료로 쓰임'},
-    {ttype:'특허',year:'2020',output:'등록특허 10-2000000 "OO 치료용 조성물" (경북대학교 산학협력단)',desc:'기술이전(3억 원) 후 임상 1상 진입'},
+    {ttype:'특허',year:'2021',output:'등록특허 10-2000000 "OO 치료용 조성물" (경북대학교 산학협력단)',desc:'기술이전(3억 원) 후 임상 1상 진입'},
   ],
   edu:[
     {kind:'대학원 교육용 저서·book chapter',title:'의생명 빅데이터 분석 입문 (공저, 대학원 교재)',year:'2024',merit:'의과학과 대학원 필수 과목 교재로 채택되어 ...'},
@@ -227,7 +229,7 @@ const EX = {
     {kind:'외국 연구자 국내 방문 (온라인 포함)',inst:'미국 Stanford University / Dr. John Smith',period:'2024.10.15',topic:'공동연구 논의 및 대학원생 세미나 (온라인)',proof:'예'},
   ],
   roster:[
-    {name:'홍길동',sid:'2021xxxxxx',degree:'박사',status:'졸업',bk:'아니오',bkever:'예',admit:'2021.03',grad:'2025.08',foreign:'아니오',ckind:'취업',career:'한국뇌연구원 박사후연구원'},
+    {name:'홍길동',sid:'2021xxxxxx',degree:'박사',status:'졸업',bk:'아니오',bkever:'예',admit:'2021.03',grad:'2025.08',foreign:'아니오',ckind:'취업',career:'한국뇌연구원 박사후연구원',crep:'예',cdesc:'재학 중 단일세포 분석 연구로 Nature Communications 등에 주저자 논문을 게재하고 미국 Stanford University에서 6주간 파견 공동연구를 수행함. 졸업 직후 한국뇌연구원 박사후연구원으로 임용되어 교육연구단에서 익힌 분석 기술로 노화 뇌 연구를 이어 가고 있음.'},
     {name:'김철수',sid:'2024xxxxxx',degree:'석사',status:'재학',bk:'예',admit:'2024.03',foreign:'아니오'},
     {name:'Nguyen Van A',sid:'2023xxxxxx',degree:'석박통합',status:'재학',bk:'예',admit:'2023.09',foreign:'예'},
     {name:'이영희',sid:'2022xxxxxx',degree:'석사',status:'수료',bk:'예',admit:'2022.03',foreign:'아니오',med:'예'},
@@ -242,6 +244,8 @@ const EX = {
     {student:'Nguyen Van A',kind:'특허·기술이전·창업',date:'2025.02',title:'등록특허 10-2700000 공동발명자'},
     {student:'이영희',kind:'수상 (교외·국내)',date:'2024.11',title:'한국분자세포생물학회 우수 포스터상'},
     {student:'홍길동',kind:'해외 연구실 공동연구 (15일 이상)',date:'2024.07 ~ 2024.08',title:'미국 Stanford University Smith Lab 6주 파견 공동연구'},
+    {student:'김철수',kind:'기타 학술 활동',date:'2025.05',title:'학생 연구과제 선정 — 한국연구재단 석사과정생 연구장려금 (연구책임자)'},
+    {student:'Nguyen Van A',kind:'기타 학술 활동',date:'2025.06',title:'단일세포 분석 코드·데이터셋 공개 (GitHub, 논문 부록 데이터)'},
   ],
 };
 /* 날짜 기준 (정렬·기간 취합) */
