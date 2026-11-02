@@ -57,6 +57,8 @@ document.addEventListener('click',async e=>{
   if(act==='bulkassign') await bulkAssign();
   if(act==='jcrup') await jcrUpload();
   if(act==='jcrfill') await jcrFill();
+  if(act==='svfetch') await svFetch();
+  if(act==='svids') await svIds();
   if(act==='publish') await publishAgg();
   if(act==='post'){const t=$('#bd-new'),v=t.value.trim();if(!v){toast('내용을 적어 주세요');t.focus();return}
     const x={text:v,by:S.name||'',at:TS(),reply:'',rby:''};
@@ -71,6 +73,7 @@ document.addEventListener('change',async e=>{
   if(t.id==='me-rev'){S.me.rev=t.value||null;S.open=null;await refresh();return}
   if(t.id==='flt'){S.filterFix=t.checked;render();return}
   if(t.id==='recap-p'){S.recapP=t.value;render();return}
+  if(t.id==='sv-yr'){S.svYr=t.value;return}
   if(/^sim-(sort|ifk|from|to)$/.test(t.id)){S.sim[t.id.slice(4)]=t.value;render();return}
   if((t.name==='start'||t.name==='end')&&t.form&&t.form.querySelector('[data-years]')){const box=t.form.querySelector('[data-years]'),k=box.dataset.years,cur={};
     box.querySelectorAll('input').forEach(x=>{if(x.value.trim())cur[x.name.slice(k.length+1)]=x.value.trim()});box.innerHTML=yearBoxes(k,{start:t.form.elements.start.value,end:t.form.elements.end.value},cur);return}
@@ -94,6 +97,7 @@ document.addEventListener('toggle',e=>{const k=e.target.dataset&&e.target.datase
 document.addEventListener('input',e=>{
   if(e.target.id==='ai-key')setAiKey(e.target.value.trim());
   if(e.target.id==='sim-n'){S.sim.n=+e.target.value;simUpdate()}
+  if(e.target.id==='sv-key')setSvKey(e.target.value.trim());
   if(e.target.dataset.max){const n=e.target.value.replace(/\s/g,'').length,m=+e.target.dataset.max;const c=document.querySelector(`[data-ctr="${e.target.name}"]`);c.textContent=`${n} / ${m}자 (공백 제외)`;c.classList.toggle('over',n>m)}
 });
 document.addEventListener('keydown',e=>{if(e.target.id==='ai-key'&&e.key==='Enter')e.preventDefault()}); // 키 칸에서 엔터로 저장되지 않게

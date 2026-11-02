@@ -64,11 +64,12 @@ function setupPanels(){
     <p class="msg">Apps Script 웹 앱 주소를 넣으면 실적마다 <b>증빙 첨부</b> 버튼이 생기고, 파일은 드라이브 <b>BK21_증빙/교수명/항목</b> 폴더에 저장돼요.</p>
     <div class="export"><input id="upurl" value="${esc(S.data.uploadUrl)}" placeholder="https://script.google.com/macros/s/…/exec" aria-label="업로드 주소"><button class="btn" data-act="upurl">저장</button></div></div>
   <div class="panel" style="margin-top:18px"><div class="head"><h2 style="font-size:17px">JCR 자료 (IF · 상위 %)</h2></div>
-    <p class="msg"><b>표준 형식 CSV</b>(연도·저널명·ISSN·eISSN·IF·상위%·분야)만 올릴 수 있어요. JCR 원본은 폴더의 <span class="mono">JCR/jcr_convert.py</span>로 먼저 변환하세요(<span class="mono">JCR/표준</span>에 저장됨). 올리면 논문 자동 채우기 때 <b><b>출판 당시 JCR</b>(7월 이후 출판은 전년도, 1–6월은 전전년도)과 <b>기준 연도 JCR</b>(신청용, 예: 올해 기준) 두 가지 IF·상위 %가 들어가요. 여러 파일을 한꺼번에 올려도 되고, 같은 저널은 가장 좋은 상위 %를 씁니다. 저장된 연도: <b>${S.data.jcrYears.length?S.data.jcrYears.slice().sort().join(', '):'없음'}</b></p>
+    <p class="msg"><b>표준 형식 CSV</b>(연도·저널명·ISSN·eISSN·IF·상위%·분야)만 올릴 수 있어요. JCR 원본은 폴더의 <span class="mono">JCR/jcr_convert.py</span>로 먼저 변환하세요(<span class="mono">JCR/표준</span>에 저장됨). 올리면 논문 자동 채우기 때 <b>출판 당시 JCR</b>(7월 이후 출판은 전년도, 1–6월은 전전년도)과 <b>기준 연도 JCR</b>(신청용, 예: 올해 기준) 두 가지 IF·상위 %가 들어가요. 여러 파일을 한꺼번에 올려도 되고, 같은 저널은 가장 좋은 상위 %를 씁니다. 저장된 연도: <b>${S.data.jcrYears.length?S.data.jcrYears.slice().sort().join(', '):'없음'}</b></p>
     <div class="export"><input type="file" id="jcr-file" accept=".xlsx,.xls,.csv" multiple style="max-width:300px"><button class="btn" data-act="jcrup">올리기</button>
       </div>
     <div class="export"><span class="msg">기준 연도 JCR</span><select id="jcr-base" style="width:auto" aria-label="기준 연도 JCR"><option value="">선택</option>${S.data.jcrYears.slice().sort().reverse().map(y=>`<option ${String(y)===String(S.data.jcrBase)?'selected':''}>${y}</option>`).join('')}</select>
       <button class="btn" data-act="jcrfill">논문 IF·JCR 채우기</button></div><p class="msg" id="jcr-msg"></p></div>
+  ${svPanel()}
   <div class="panel" style="margin-top:18px"><div class="head"><h2 style="font-size:17px">초기 데이터 가져오기</h2></div>
     <p class="msg">seed.json 을 고르면 교수·담당 교수 명단·실적이 저장됩니다. <b>같은 번호의 자료를 덮어쓰니</b> 처음 한 번만 쓰세요.</p>
     <div class="export"><input type="file" id="seed-file" accept=".json,application/json" style="max-width:320px"><button class="btn" data-act="seed">가져오기</button><span class="msg" id="seed-msg"></span></div></div>
