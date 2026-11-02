@@ -48,7 +48,7 @@ function simTable(){
   </tbody></table></div>`;
 }
 // n(참여 교수 수)에 따른 변화: 단위가 달라 지표마다 작은 그래프 하나씩 (가로축 n은 같이 씀)
-const SIM_CH=[['1인당 논문 (연간)','편/년',(c,y)=>c.np/c.n/y,2],['1인당 IF 합 (연간)','/년',(c,y)=>c.ifs/c.n/y,1],['1인당 대학원생 (현재)','명',c=>c.ns/c.n,2],['FWCI 평균 (논문)','',c=>c.fwn?c.fws/c.fwn:null,2]];
+const SIM_CH=[['1인당 논문 (연간)','편/년',(c,y)=>c.np/c.n/y,2],['1인당 IF 합 (연간)','/년',(c,y)=>c.ifs/c.n/y,1],['대학원생 수 (현재)','명',c=>c.ns,0],['FWCI 평균 (논문)','',c=>c.fwn?c.fws/c.fwn:null,2]];
 const SCH={W:300,H:150,L:36,R:10,T:10,B:22};
 const simCh=()=>SIM_CH.filter(c=>c[0][0]!=='F'||S.simRows.some(r=>r.fw!==null));
 const schX=n=>{const M=S.simRows.length;return SCH.L+(M>1?(n-1)/(M-1):.5)*(SCH.W-SCH.L-SCH.R)};
