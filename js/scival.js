@@ -23,9 +23,9 @@ function svPanel(){
       <textarea id="sv-ids" placeholder="홍길동 57211941553&#10;김철수 57000000000" style="min-height:120px"></textarea>
       <div class="export"><button class="btn" data-act="svids">적용</button><span class="msg" id="sv-idmsg"></span></div></details>
     ${got.length?`<details class="fold" style="margin-top:14px" ${fold('sv')}><summary><span class="caret" aria-hidden="true"></span>불러온 값 (${got.length}명) · SciVal 이름이 교수님과 같은지 확인해 주세요</summary>
-      <div class="tablebox"><table><thead><tr><th>교수</th><th>Scopus ID</th><th>SciVal 이름</th><th>기간</th><th class="num">논문</th><th class="num">FWCI</th><th class="num">피인용</th><th class="num">h-index</th><th>불러온 날</th></tr></thead><tbody>
+      <div class="tablebox"><table><thead><tr><th>교수</th><th>Scopus ID</th><th>SciVal 이름</th><th>기간</th><th class="num">논문</th><th class="num">FWCI</th><th class="num">피인용</th><th class="num">h-index</th><th>불러온 날</th><th></th></tr></thead><tbody>
       ${got.map(p=>`<tr><td>${esc(p.name)}</td><td class="mono">${esc(p.scopus||'')}${svOf(p)?'':' <span class="chip fix">ID 바뀜, 다시 불러오기</span>'}</td><td>${esc(p.sv.name)}</td><td>${p.sv.y0}–${p.sv.y1}</td>
-        <td class="num">${svNum(p.sv.so)}</td><td class="num">${svNum(p.sv.fwci)}</td><td class="num">${svNum(p.sv.cit)}</td><td class="num">${svNum(p.sv.h)}</td><td>${esc(p.sv.at)}</td></tr>`).join('')}</tbody></table></div></details>`:''}
+        <td class="num">${svNum(p.sv.so)}</td><td class="num">${svNum(p.sv.fwci)}</td><td class="num">${svNum(p.sv.cit)}</td><td class="num">${svNum(p.sv.h)}</td><td>${esc(p.sv.at)}</td><td><button class="btn ghost sm" data-svdel="${p.id}">삭제</button></td></tr>`).join('')}</tbody></table></div></details>`:''}
   </div>`;
 }
 const doiNorm=v=>String(v||'').trim().toLowerCase().replace(/^https?:\/\/(dx\.)?doi\.org\//,'').replace(/^doi:\s*/,'');
@@ -127,7 +127,7 @@ async function svFindIds(){
       au[ids[k]]=((r.d.publication||{}).authors||[]).map(a=>({id:String(a.id),name:a.name||''}))}
   }catch(e){svFail(e);return}
   const R=S.data.profs.map(p=>{const A=pick[p.id].map(d=>au[sid[d]]).filter(Boolean), cnt={}, nm={};
-    A.forEach(a=>{a.forEach(x=>nm[x.id]=x.name);new Set(a.map(x=>x.id)).forEach(id=>cnt[id]=(cnt[id]||0)+1)});
+    A.forEach(a=>{a.forEach(x=>nm[x.id]=x.name);new Set(a.map(x=>x.id)).forEach(id=>{if(!(p.scopusNo||[]).includes(id))cnt[id]=(cnt[id]||0)+1})}); // 관리자가 지운 ID는 다시 권하지 않음
     return {p,n:pick[p.id].length,m:A.length,c:Object.entries(cnt).filter(([,c])=>c>=2).sort((a,b)=>b[1]-a[1]).map(([id,c])=>({id,c,name:nm[id]}))}});
   const sure=r=>r.c.length>0&&r.c[0].c>=Math.max(2,Math.ceil(r.m/2))&&(r.c.length===1||r.c[0].c>r.c[1].c);
   const taken=new Map(); R.forEach(r=>{if(sure(r))taken.set(r.c[0].id,r.p.id)});
@@ -153,5 +153,15 @@ async function svFindSave(){
   if(!confirm(`${ups.length}명의 Scopus Author ID를 넣을까요?`)) return;
   try{const b=db.batch();ups.forEach(([p,id])=>b.update(db.doc('profs/'+p.id),{scopus:id}));await b.commit();ups.forEach(([p,id])=>p.scopus=id);
     S.svFind=null; render(); $('#sv-msg').textContent=`${ups.length}명 넣었어요. '교수 지표 불러오기'를 누르면 SciVal 값이 들어와요.`;
+  }catch(e){fail(e)}
+}
+// 잘못 불러온 교수 지표 지우기: Scopus ID와 값을 함께 지우고, 그 ID는 Scopus ID 찾기에서 다시 권하지 않음.
+// ID를 바꾼 뒤 남은 예전 값이면 값만 지움
+async function svDel(pid){
+  const p=prof(pid); if(!p||!p.sv) return; const FV=firebase.firestore.FieldValue, both=!!svOf(p), id=p.scopus;
+  if(!confirm(both?`${p.name} 교수님의 Scopus ID(${id})와 불러온 SciVal 값을 지울까요?\nScopus ID 찾기는 이 ID를 다시 권하지 않아요. 맞는 ID는 다시 넣으면 돼요.`:`${p.name} 교수님의 예전 SciVal 값을 지울까요? (지금 ID ${id||'없음'}는 그대로)`)) return;
+  try{await db.doc('profs/'+pid).update(both?{sv:FV.delete(),scopus:'',scopusNo:FV.arrayUnion(id)}:{sv:FV.delete()});
+    delete p.sv; if(both){p.scopus='';p.scopusNo=[...new Set([...(p.scopusNo||[]),id])]}
+    render(); toast(both?`${p.name} 교수님의 Scopus ID와 SciVal 값을 지웠어요`:'예전 SciVal 값을 지웠어요');
   }catch(e){fail(e)}
 }

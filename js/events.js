@@ -14,6 +14,7 @@ document.addEventListener('click',async e=>{
   if(b.dataset.attach){S.attachFor=b.dataset.attach;const fp=$('#filepick');fp.value='';fp.click();return}
   if(b.dataset.unfile){await unfile(b.dataset.unfile,b.dataset.fid);return}
   if(b.dataset.revoke){await revokeRev(b.dataset.revoke);return}
+  if(b.dataset.svdel){await svDel(b.dataset.svdel);return}
   if(b.dataset.admin){await setAdmin(b.dataset.admin,!!b.dataset.on);return}
   if(b.dataset.delkey){await delKey(b.dataset.delkey);return}
   if(b.dataset.expand){const id=b.dataset.expand;S.expanded.has(id)?S.expanded.delete(id):S.expanded.add(id);render();return}
