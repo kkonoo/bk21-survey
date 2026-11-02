@@ -60,6 +60,9 @@ document.addEventListener('click',async e=>{
   if(act==='jcrfill') await jcrFill();
   if(act==='svfetch') await svFetch();
   if(act==='svpaper') await svPaperFill();
+  if(act==='svfind') await svFindIds();
+  if(act==='svfindsave') await svFindSave();
+  if(act==='svfindclose'){S.svFind=null;render()}
   if(act==='svids') await svIds();
   if(act==='publish') await publishAgg();
   if(act==='post'){const t=$('#bd-new'),v=t.value.trim();if(!v){toast('내용을 적어 주세요');t.focus();return}
