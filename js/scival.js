@@ -1,7 +1,7 @@
-// SciVal (Elsevier API): 교수별 Scopus Author ID로 논문 수·FWCI·피인용·h-index 불러오기 (관리자)
+// SciVal (Elsevier API): 교수별 Scopus Author ID로 논문 수·FWCI·피인용·h-index, 논문별 FWCI (DOI로) 불러오기 (관리자)
 /* ===== SciVal ===== */
 // 키는 관리자 브라우저에만 저장. 학교 구독은 교내 IP로 인정되므로 교내 네트워크에서만 불러올 수 있다
-const SV_KEY='bk21-scival-key', SV_API='https://api.elsevier.com/analytics/scival/author/metrics';
+const SV_KEY='bk21-scival-key', EL='https://api.elsevier.com', SV_API=EL+'/analytics/scival/author/metrics';
 const svKey=()=>{try{return localStorage.getItem(SV_KEY)||''}catch(e){return ''}};
 const setSvKey=k=>{try{k?localStorage.setItem(SV_KEY,k):localStorage.removeItem(SV_KEY)}catch(e){}};
 const SV_YR=[['5yrs','최근 5년 (올해 제외)'],['5yrsAndCurrent','최근 5년 + 올해']];
@@ -10,12 +10,13 @@ const svOf=p=>p.sv&&p.scopus&&String(p.sv.id)===String(p.scopus)?p.sv:null; // I
 const svNum=v=>v==null?'—':v;
 const svText=v=>`${v.y0}–${v.y1} 논문 ${svNum(v.so)} · FWCI ${svNum(v.fwci)} · 피인용 ${svNum(v.cit)} · h-index ${svNum(v.h)}`;
 function svPanel(){
-  const P=S.data.profs, got=P.filter(p=>p.sv);
+  const P=S.data.profs, got=P.filter(p=>p.sv), papers=S.data.items.filter(i=>i.cat==='paper'&&doiNorm(i.f.doi));
   return `<div class="panel" style="margin-top:18px"><div class="head"><h2 style="font-size:17px">SciVal (FWCI · 교수 지표)</h2></div>
-    <p class="msg">교수님마다 <b>Scopus Author ID</b>를 넣고 <b>교내 네트워크</b>에서 불러오기를 누르면, SciVal의 논문 수·FWCI·피인용 수·h-index가 교수 정보에 저장돼요. 관리자의 교수 요약과 참여 교수 시뮬레이션에만 보여요. ID는 교수님 안내 화면에서 각자 넣거나 아래 일괄 입력으로 넣어요. ID 있는 교수 <b>${P.filter(p=>p.scopus).length}</b> / ${P.length}명 · 불러온 교수 <b>${P.filter(svOf).length}</b>명</p>
+    <p class="msg"><b>교내 네트워크</b>에서만 돼요. <b>논문 FWCI 채우기</b>는 입력된 논문의 DOI로 SciVal FWCI를 찾아 논문마다 넣어요 (논문 카드·엑셀·참여 교수 시뮬레이션에 나옴). DOI 있는 논문 ${papers.length}편 중 FWCI 있음 <b>${papers.filter(i=>i.f.fwci).length}</b>편</p>
+    <p class="msg"><b>교수 지표 불러오기</b>는 교수님마다 넣은 <b>Scopus Author ID</b>로 SciVal의 논문 수·FWCI·피인용 수·h-index를 교수 정보에 저장해요 (관리자의 교수 요약에만 보임). ID는 교수님 안내 화면에서 각자 넣거나 아래 일괄 입력으로 넣어요. ID 있는 교수 <b>${P.filter(p=>p.scopus).length}</b> / ${P.length}명 · 불러온 교수 <b>${P.filter(svOf).length}</b>명</p>
     <div class="export"><input type="password" id="sv-key" value="${esc(svKey())}" placeholder="Elsevier API 키" autocomplete="off" spellcheck="false" style="max-width:300px" aria-label="Elsevier API 키">
       <select id="sv-yr" aria-label="SciVal 기간">${SV_YR.map(([v,l])=>`<option value="${v}" ${v===S.svYr?'selected':''}>${l}</option>`).join('')}</select>
-      <button class="btn primary" data-act="svfetch">SciVal 불러오기</button><span class="msg" id="sv-msg"></span></div>
+      <button class="btn primary" data-act="svpaper">논문 FWCI 채우기</button><button class="btn" data-act="svfetch">교수 지표 불러오기</button><span class="msg" id="sv-msg"></span></div>
     <p class="msg">API 키는 이 브라우저에만 저장돼요.</p>
     <details style="margin-top:12px"><summary style="cursor:pointer;font-weight:600">Scopus Author ID 일괄 입력</summary>
       <p class="msg">한 줄에 한 분씩 <b>이름 ID</b>로 적고 적용을 누르세요. 엑셀의 두 칸을 그대로 붙여 넣어도 돼요. 적힌 교수님만 바뀌어요.</p>
@@ -27,37 +28,63 @@ function svPanel(){
         <td class="num">${svNum(p.sv.so)}</td><td class="num">${svNum(p.sv.fwci)}</td><td class="num">${svNum(p.sv.cit)}</td><td class="num">${svNum(p.sv.h)}</td><td>${esc(p.sv.at)}</td></tr>`).join('')}</tbody></table></div></details>`:''}
   </div>`;
 }
-// 한 번에 여러 ID를 묻고, 응답을 {id:{name,so,fwci,cit,h}}로. 실패하면 {status,err}
-async function svGet(ids,key){
-  const q=new URLSearchParams({metricTypes:'ScholarlyOutput,FieldWeightedCitationImpact,CitationCount,HIndices',authors:ids.join(','),yearRange:S.svYr,includeSelfCitations:'true',byYear:'false',
-    includedDocs:'AllPublicationTypes',journalImpactType:'CiteScore',showAsFieldWeighted:'false',indexType:'hIndex',apiKey:key,httpAccept:'application/json'});
-  let r,t; try{r=await fetch(SV_API+'?'+q);t=await r.text()}catch(e){return {status:0,err:'연결하지 못했어요'}}
+const doiNorm=v=>String(v||'').trim().toLowerCase().replace(/^https?:\/\/(dx\.)?doi\.org\//,'').replace(/^doi:\s*/,'');
+// Elsevier API 한 번 부르기: 성공하면 {d}, 실패하면 {status,err}
+async function svJSON(url,params){
+  const q=new URLSearchParams(Object.assign({},params,{apiKey:svKey(),httpAccept:'application/json'}));
+  let r,t; try{r=await fetch(url+'?'+q);t=await r.text()}catch(e){return {status:0,err:'연결하지 못했어요'}}
   let d=null; try{d=JSON.parse(t)}catch(e){}
-  if(!r.ok||!d||!d.results) return {status:r.status,err:(d&&d['service-error']&&d['service-error'].status&&d['service-error'].status.statusText)||t.slice(0,150)};
-  const out={};
-  d.results.forEach(x=>{const m=Object.fromEntries((x.metrics||[]).map(v=>[v.metricType,v.value]));
-    out[String(x.author.id)]={name:x.author.name||'',so:m.ScholarlyOutput??null,fwci:m.FieldWeightedCitationImpact??null,cit:m.CitationCount??null,h:m.HIndices??null}});
-  return {out,src:d.dataSource||{}};
+  if(!r.ok||!d) return {status:r.status,err:(d&&d['service-error']&&d['service-error'].status&&d['service-error'].status.statusText)||t.slice(0,150)};
+  return {d};
 }
-async function svFetch(){
-  const key=svKey(), msg=$('#sv-msg'), P=S.data.profs.filter(p=>/^\d{6,}$/.test(p.scopus||''));
-  if(!key){toast('Elsevier API 키를 넣어 주세요');$('#sv-key').focus();return}
-  if(!P.length){msg.textContent='Scopus Author ID가 들어간 교수가 없어요.';return}
-  const ids=[...new Set(P.map(p=>p.scopus))], got={}, bad=[]; let src={};
-  for(let k=0;k<ids.length;k+=25){
-    msg.textContent=`불러오는 중… ${k} / ${ids.length}`;
-    const b=ids.slice(k,k+25), r=await svGet(b,key);
-    if(r.out){Object.assign(got,r.out);src=r.src;continue}
-    if(r.status!==400){msg.textContent=`불러오지 못했어요 (${r.err}). 교내 네트워크인지, 키가 맞는지 확인해 주세요.`;return} // 400은 잘못된 ID
-    if(b.length===1){bad.push(b[0]);continue}
-    for(const id of b){const s=await svGet([id],key);if(s.out){Object.assign(got,s.out);src=s.src}else bad.push(id)} // 잘못된 ID 하나 때문에 묶음 전체가 실패하면 하나씩 다시
+// 묶음으로 묻고, 400(잘못된 값 하나 때문에 묶음 전체 실패)이면 하나씩 다시. 키·연결 오류면 멈춤
+async function svBatch(list,size,ask,label){
+  const out=[];
+  for(let k=0;k<list.length;k+=size){$('#sv-msg').textContent=`${label} ${k} / ${list.length}`;
+    const b=list.slice(k,k+size), r=await ask(b);
+    if(!r.err){out.push(r.d);continue}
+    if(r.status!==400) throw new Error(r.err);
+    for(const x of b){const s=await ask([x]);if(!s.err)out.push(s.d)}
   }
-  ids.filter(id=>!got[id]&&!bad.includes(id)).forEach(id=>bad.push(id));
-  const at=new Date().getFullYear()+'.'+today(), ups=P.filter(p=>got[p.scopus]).map(p=>[p,Object.assign({id:p.scopus,y0:src.metricStartYear||'',y1:src.metricEndYear||'',at},got[p.scopus])]);
+  return out;
+}
+const svFail=e=>{$('#sv-msg').textContent=`불러오지 못했어요 (${e.message}). 교내 네트워크인지, 키가 맞는지 확인해 주세요.`};
+async function svFetch(){
+  const msg=$('#sv-msg'), P=S.data.profs.filter(p=>/^\d{6,}$/.test(p.scopus||''));
+  if(!svKey()){toast('Elsevier API 키를 넣어 주세요');$('#sv-key').focus();return}
+  if(!P.length){msg.textContent='Scopus Author ID가 들어간 교수가 없어요.';return}
+  const ids=[...new Set(P.map(p=>p.scopus))], got={}; let D;
+  try{D=await svBatch(ids,25,b=>svJSON(SV_API,{metricTypes:'ScholarlyOutput,FieldWeightedCitationImpact,CitationCount,HIndices',authors:b.join(','),yearRange:S.svYr,includeSelfCitations:'true',byYear:'false',
+    includedDocs:'AllPublicationTypes',journalImpactType:'CiteScore',showAsFieldWeighted:'false',indexType:'hIndex'}),'불러오는 중…')}catch(e){svFail(e);return}
+  D.forEach(d=>(d.results||[]).forEach(x=>{const m=Object.fromEntries((x.metrics||[]).map(v=>[v.metricType,v.value]));
+    got[String(x.author.id)]={name:x.author.name||'',so:m.ScholarlyOutput??null,fwci:m.FieldWeightedCitationImpact??null,cit:m.CitationCount??null,h:m.HIndices??null}}));
+  const src=(D[0]||{}).dataSource||{}, at=new Date().getFullYear()+'.'+today();
+  const ups=P.filter(p=>got[p.scopus]).map(p=>[p,Object.assign({id:p.scopus,y0:src.metricStartYear||'',y1:src.metricEndYear||'',at},got[p.scopus])]);
   try{for(let a=0;a<ups.length;a+=400){const w=db.batch();ups.slice(a,a+400).forEach(([p,sv])=>w.update(db.doc('profs/'+p.id),{sv}));await w.commit()}
     ups.forEach(([p,sv])=>p.sv=sv)}catch(e){fail(e);return}
-  render(); const names=P.filter(p=>bad.includes(p.scopus)).map(p=>p.name);
+  render(); const names=P.filter(p=>!got[p.scopus]).map(p=>p.name);
   $('#sv-msg').textContent=`${ups.length}명 저장했어요.`+(names.length?` 찾지 못한 ID: ${names.join(', ')}`:'');
+}
+// 논문별 FWCI: DOI → Scopus 번호 (Scopus 검색) → FWCI (SciVal). SciVal은 출판 연도 칸에만 값을 준다 (기간 밖 논문은 값 없음)
+async function svPaperFill(){
+  const msg=$('#sv-msg'); if(!svKey()){toast('Elsevier API 키를 넣어 주세요');$('#sv-key').focus();return}
+  const todo=S.data.items.filter(i=>i.cat==='paper'&&doiNorm(i.f.doi)); if(!todo.length){msg.textContent='DOI가 있는 논문이 없어요.';return}
+  const dois=[...new Set(todo.map(i=>doiNorm(i.f.doi)))], sid={}, byId={};
+  const q=d=>/[()\s]/.test(d)?`DOI({${d}})`:`DOI(${d})`; // 괄호·빈칸이 있는 DOI는 {정확히}로
+  try{
+    (await svBatch(dois,20,b=>svJSON(EL+'/content/search/scopus',{query:b.map(q).join(' OR '),count:'25',field:'dc:identifier,prism:doi'}),'논문 찾는 중…'))
+      .forEach(d=>((d['search-results']||{}).entry||[]).forEach(e=>{const k=doiNorm(e['prism:doi']),id=String(e['dc:identifier']||'').split(':')[1];if(k&&id)sid[k]=id}));
+    (await svBatch([...new Set(Object.values(sid))],25,b=>svJSON(EL+'/analytics/scival/publication/metrics',{publicationIds:b.join(','),metricTypes:'FieldWeightedCitationImpact'}),'FWCI 받는 중…'))
+      .forEach(d=>(d.results||[]).forEach(x=>{const v=((x.metrics||[])[0]||{}).valueByYear||{}, val=v[x.publication.publicationYear]??Object.values(v).find(y=>y!=null);if(val!=null)byId[String(x.publication.id)]=val}));
+  }catch(e){svFail(e);return}
+  const fw=d=>sid[d]&&byId[sid[d]]!=null?String(byId[sid[d]]):null, nf=dois.filter(d=>!sid[d]).length, nv=dois.filter(d=>sid[d]&&fw(d)===null).length;
+  const ups=todo.filter(i=>{const v=fw(doiNorm(i.f.doi));return v!==null&&v!==(i.f.fwci||'')}).map(i=>[i,Object.assign({},i.f,{fwci:fw(doiNorm(i.f.doi))})]);
+  const note=`Scopus에서 못 찾은 DOI ${nf}개 · 찾았지만 FWCI가 없는 논문 ${nv}개 (SciVal 기간 밖, 예: 올해 논문)`;
+  if(!ups.length){msg.textContent='바뀌는 논문이 없어요. '+note;return}
+  if(!confirm(`논문 ${ups.length}건에 FWCI를 넣을까요? (이미 있던 값은 새 값으로 바뀌어요)\n${note}`)){msg.textContent='';return}
+  try{for(let a=0;a<ups.length;a+=400){const w=db.batch();ups.slice(a,a+400).forEach(([i,f])=>w.update(db.doc('items/'+i.id),{f}));await w.commit()}
+    ups.forEach(([i,f])=>i.f=f)}catch(e){fail(e);return}
+  render(); $('#sv-msg').textContent=`논문 ${ups.length}건에 FWCI를 넣었어요. `+note;
 }
 async function svIds(){
   const msg=$('#sv-idmsg'), ups=[], miss=[], bad=[];

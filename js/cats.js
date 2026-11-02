@@ -59,6 +59,7 @@ const CATS = [
     {k:'jcr',l:'JCR 상위 % (출판 당시)',t:'text',ph:'12.5',help:'분야 순위 ÷ 분야 저널 수 × 100 (여러 분야면 가장 좋은 값)'},
     {k:'if_cur',l:'IF (기준 연도 JCR)',t:'text',help:'관리자가 정한 기준 연도 JCR 값 (자동)'},
     {k:'jcr_cur',l:'JCR 상위 % (기준 연도)',t:'text',help:'관리자가 정한 기준 연도 JCR 값 (자동)'},
+    {k:'fwci',l:'FWCI (SciVal)',t:'text',help:'관리자가 SciVal에서 채워요 (자동). 같은 분야·연도 세계 평균이 1.0'},
     {k:'role',l:'본인 저자 역할',t:'select',o:'role',req:1},
     {k:'nauth',l:'총 저자 수',t:'number',help:'자동 채우기로 들어옵니다'},
     {k:'nmain',l:'주저자 수 (1저자·교신, 중복 제외)',t:'number',help:'공동 1저자·공동 교신이 있으면 모두 세어 넣어 주세요 (예: 공동 1저자 2명 + 교신 1명 = 3). 비우면 1명으로 봅니다'},
@@ -68,7 +69,7 @@ const CATS = [
     {k:'pinst',l:'국가 / 소속기관 (국제일 때)',t:'text',ph:'미국 / Harvard Medical School'},
     {k:'rep',l:'대표업적 후보로 추천',t:'yn'},
     {k:'merit',l:'대표업적 우수성 (후보일 때만)',t:'area',max:500,full:1},
-   ], title:f=>f.title, meta:f=>[f.journal, f.ym, f.vol&&('Vol. '+f.vol), f.if&&('IF '+f.if+(f.jcr?' · 상위 '+f.jcr+'%':'')+' (출판 당시)'), f.if_cur&&('IF '+f.if_cur+(f.jcr_cur?' · 상위 '+f.jcr_cur+'%':'')+' (기준 '+(S.data.jcrBase||'')+')'), f.role, f.nauth&&('저자 '+f.nauth+'명'), f.doi&&('DOI '+f.doi)], chips:f=>[ROLE_REDO.includes(f.role)&&['fix','저자 역할 다시 선택'], f.rep==='예'&&['rep','대표 후보'], f.student&&['pre','학생 주저자: '+f.student], f.intl==='예'&&['pre','국제공동'], f.rep==='예'&&!f.merit&&['fix','우수성 미작성'], !f.jcr&&['fix','JCR 상위 % 미입력']]},
+   ], title:f=>f.title, meta:f=>[f.journal, f.ym, f.vol&&('Vol. '+f.vol), f.if&&('IF '+f.if+(f.jcr?' · 상위 '+f.jcr+'%':'')+' (출판 당시)'), f.if_cur&&('IF '+f.if_cur+(f.jcr_cur?' · 상위 '+f.jcr_cur+'%':'')+' (기준 '+(S.data.jcrBase||'')+')'), f.fwci&&('FWCI '+f.fwci), f.role, f.nauth&&('저자 '+f.nauth+'명'), f.doi&&('DOI '+f.doi)], chips:f=>[ROLE_REDO.includes(f.role)&&['fix','저자 역할 다시 선택'], f.rep==='예'&&['rep','대표 후보'], f.student&&['pre','학생 주저자: '+f.student], f.intl==='예'&&['pre','국제공동'], f.rep==='예'&&!f.merit&&['fix','우수성 미작성'], !f.jcr&&['fix','JCR 상위 % 미입력']]},
   {key:'grant', name:'연구비', table:'3-1', rule:'2021.1 이후 수행 과제. 신청서는 <b>연도별 입금액</b>(입금일 기준)으로 1인당 수주액을 계산합니다. <b>공동연구원 참여 과제도</b> 입력해 주세요 (경북대 산단 입금분 또는 책임자 지분확인서로 인정). 산단을 거치지 않은 참여 과제는 과제마다 있는 <b>지분확인서</b> 버튼(과제 정보가 채워진 양식) 또는 위의 빈 양식으로 연구책임자 확인·서명을 받아 증빙으로 올려 주세요. 교내 연구비·민간부담금 제외, 금액은 천원 단위.',
    fields:[
     {k:'title',l:'과제명',t:'text',req:1,full:1},
