@@ -1,6 +1,7 @@
 // 클릭·입력·저장 이벤트, 시작
 /* ===== 이벤트 ===== */
 document.addEventListener('click',async e=>{
+  const sc=e.target.closest&&e.target.closest('.sch svg'); if(sc){S.sim.n=simNAt(sc,e);simUpdate();return}
   const b=e.target.closest('button,tr.click'); if(!b) return;
   if(b.dataset.role){S.role=b.dataset.role;S.open=null;S.cat='home';S.editing=null;S.tsv='';await refresh();return}
   if(b.dataset.cat){S.cat=b.dataset.cat;S.editing=null;render();return}
@@ -94,6 +95,7 @@ document.addEventListener('change',async e=>{
   if(t.name&&t.closest('.checks')){const box=t.closest('.checks');const fd=CAT[box.closest('form').dataset.cat].fields.find(f=>f.k===t.name);
     if(fd.max&&box.querySelectorAll('input:checked').length>fd.max){t.checked=false;toast(`최대 ${fd.max}개까지 고를 수 있어요`)}}
 });
+document.addEventListener('pointermove',e=>{if(S.simHov!==null||(e.target.closest&&e.target.closest('.sch svg')))simHover(e.target.closest&&e.target.closest('.sch svg'),e)});
 document.addEventListener('toggle',e=>{const k=e.target.dataset&&e.target.dataset.fold;if(k)S.fold[k]=e.target.open},true);
 document.addEventListener('input',e=>{
   if(e.target.id==='ai-key')setAiKey(e.target.value.trim());

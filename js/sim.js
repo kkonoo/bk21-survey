@@ -47,7 +47,47 @@ function simTable(){
       <td class="num">${r.P.length}</td><td class="num">${simFmt(r.ifs,1)}</td>${fw?`<td class="num">${r.fw!==null?simFmt(r.fw,2):'—'}</td>`:''}<td class="num">${r.R.length}</td><td class="num">${simFmt(r.cum.np/r.cum.n/y,2)}</td><td class="num">${simFmt(r.cum.ifs/r.cum.n/y,1)}</td></tr>`).join('')}
   </tbody></table></div>`;
 }
-function simUpdate(){$('#sim-n').value=S.sim.n;$('#sim-nv').textContent=S.sim.n+'명';$('#sim-sum').innerHTML=simSum();$('#sim-tbl').innerHTML=simTable()}
+// n(참여 교수 수)에 따른 변화: 단위가 달라 지표마다 작은 그래프 하나씩 (가로축 n은 같이 씀)
+const SIM_CH=[['1인당 논문 (연간)','편/년',(c,y)=>c.np/c.n/y,2],['1인당 IF 합 (연간)','/년',(c,y)=>c.ifs/c.n/y,1],['1인당 대학원생 (현재)','명',c=>c.ns/c.n,2],['FWCI 평균 (논문)','',c=>c.fwn?c.fws/c.fwn:null,2]];
+const SCH={W:300,H:150,L:36,R:10,T:10,B:22};
+const simCh=()=>SIM_CH.filter(c=>c[0][0]!=='F'||S.simRows.some(r=>r.fw!==null));
+const schX=n=>{const M=S.simRows.length;return SCH.L+(M>1?(n-1)/(M-1):.5)*(SCH.W-SCH.L-SCH.R)};
+function niceTicks(a,b){
+  if(!(b>a)){a=a>0?a*.8:0;b=(b||1)*1.2}
+  const raw=(b-a)/3, e=10**Math.floor(Math.log10(raw)), m=raw/e, st=(m<=1?1:m<=2?2:m<=2.5?2.5:m<=5?5:10)*e, t=[];
+  for(let v=Math.floor(a/st)*st;v<=Math.ceil(b/st)*st+st/2;v+=st)t.push(+v.toFixed(10));
+  return t;
+}
+function simCharts(){
+  const R=S.simRows, M=R.length, N=S.sim.n, y=simYears(), {W,H,T,B,L}=SCH, f1=v=>v.toLocaleString(undefined,{maximumFractionDigits:2});
+  const xs=[1,2,5,10,20,50].find(s=>M/s<=6)||100, xt=[1,...Array.from({length:Math.floor(M/xs)},(_,k)=>(k+1)*xs).filter(n=>n>1&&n<=M)];
+  return simCh().map(([lab,u,fn,d])=>{
+    const v=R.map(r=>fn(r.cum,y)), ok=v.filter(x=>x!==null&&isFinite(x)); if(!ok.length) return '';
+    const tk=niceTicks(Math.min(...ok),Math.max(...ok)), lo=tk[0], hi=tk[tk.length-1], Y=x=>T+(1-(x-lo)/(hi-lo))*(H-T-B);
+    let d0='', gap=true; v.forEach((x,k)=>{if(x===null||!isFinite(x)){gap=true;return}d0+=(gap?'M':'L')+schX(k+1).toFixed(1)+','+Y(x).toFixed(1);gap=false});
+    const cur=v[N-1];
+    return `<figure class="sch"><figcaption>${lab}${u?` <span>${u}</span>`:''}</figcaption>
+      <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${lab}: 1명일 때 ${ok.length?simFmt(v.find(x=>x!==null)??0,d):'—'}, ${M}명일 때 ${v[M-1]===null?'—':simFmt(v[M-1],d)}, 지금 ${N}명에서 ${cur===null?'—':simFmt(cur,d)}">
+      ${tk.map(t=>`<line class="g" x1="${L}" x2="${W-SCH.R}" y1="${Y(t).toFixed(1)}" y2="${Y(t).toFixed(1)}"/><text class="t" x="${L-6}" y="${(Y(t)+3.5).toFixed(1)}" text-anchor="end">${f1(t)}</text>`).join('')}
+      ${xt.map(n=>`<text class="t" x="${schX(n).toFixed(1)}" y="${H-6}" text-anchor="middle">${n}</text>`).join('')}
+      <line class="sel" x1="${schX(N).toFixed(1)}" x2="${schX(N).toFixed(1)}" y1="${T}" y2="${H-B}"/>
+      <path class="ln" d="${d0}"/>${d0.includes('L')?'':`<circle class="dot" r="3" cx="${schX(1)}" cy="${Y(ok[0]).toFixed(1)}"/>`}
+      <line class="hx" x1="0" x2="0" y1="${T}" y2="${H-B}" visibility="hidden"/>
+      ${cur===null?'':`<circle class="dot" r="4.5" cx="${schX(N).toFixed(1)}" cy="${Y(cur).toFixed(1)}"/>`}</svg></figure>`}).join('');
+}
+// 그래프 위 한 줄: 가리키는 n(없으면 지금 N)의 모든 지표
+function simReadHTML(n){
+  const N=S.sim.n, k=n||N, r=S.simRows[k-1], y=simYears();
+  return `${n&&n!==N?'가리킨 곳':'지금'}: <b>${k}명 참여 (${esc(r.p.name)} 교수까지)</b> · `+simCh().map(([lab,u,fn,d])=>{const v=fn(r.cum,y);return `${lab.replace(/ \(.*\)/,'')} ${v===null?'—':simFmt(v,d)+u}`}).join(' · ');
+}
+S.simHov=null;
+function simNAt(svg,e){const r=svg.getBoundingClientRect(), x=(e.clientX-r.left)/r.width*SCH.W, M=S.simRows.length;return Math.min(M,Math.max(1,Math.round((x-SCH.L)/(SCH.W-SCH.L-SCH.R)*(M-1))+1))}
+function simHover(svg,e){
+  const n=svg?simNAt(svg,e):null; if(n===S.simHov) return; S.simHov=n;
+  document.querySelectorAll('.sch .hx').forEach(l=>{if(n){const x=schX(n).toFixed(1);l.setAttribute('x1',x);l.setAttribute('x2',x);l.setAttribute('visibility','visible')}else l.setAttribute('visibility','hidden')});
+  $('#sim-read').innerHTML=simReadHTML(n);
+}
+function simUpdate(){$('#sim-n').value=S.sim.n;$('#sim-nv').textContent=S.sim.n+'명';$('#sim-sum').innerHTML=simSum();$('#sim-chart').innerHTML=simCharts();S.simHov=null;$('#sim-read').innerHTML=simReadHTML(null);$('#sim-tbl').innerHTML=simTable()}
 function simView(){
   const m=S.sim, M=S.data.profs.length; if(!M) return '<div class="empty">교수 명단이 없어요.</div>';
   if(!m.ifk)m.ifk=S.data.jcrBase?'cur':'pub'; if(!m.from)m.from='2021-01'; if(!m.to)m.to=thisMonth();
@@ -59,6 +99,10 @@ function simView(){
       <span class="msg">논문 기간</span><input type="month" id="sim-from" value="${esc(m.from)}" style="width:auto" aria-label="논문 기간 시작 월"><span>~</span><input type="month" id="sim-to" value="${esc(m.to)}" style="width:auto" aria-label="논문 기간 끝 월"></div>
     <div class="slide"><label for="sim-n">참여 교수</label><input type="range" id="sim-n" min="1" max="${M}" value="${m.n}"><b id="sim-nv">${m.n}명</b><span class="msg">/ 등록 ${M}명</span></div>
     <div id="sim-sum">${simSum()}</div></div>
+  <div class="panel" style="margin-top:16px"><div class="head"><h2 style="font-size:17px">참여 교수 수에 따른 변화</h2></div>
+    <p class="msg">가로축은 참여 교수 수(n)예요. 1위부터 n위까지 참여할 때의 값이고, 세로선과 점이 지금 고른 수예요. 그래프를 누르면 그 수로 바뀌어요.</p>
+    <p class="sim-read" id="sim-read">${simReadHTML(null)}</p>
+    <div class="sim-charts" id="sim-chart">${simCharts()}</div></div>
   <div class="panel" style="margin-top:16px"><div class="head"><h2 style="font-size:17px">실적 순위</h2></div>
     <p class="msg">줄을 누르면 그 교수까지 참여하는 것으로 바뀌어요. 누적 칸은 1위부터 그 줄까지 참여할 때의 1인당 연간 값이에요.</p>
     <div id="sim-tbl" style="margin-top:12px">${simTable()}</div>

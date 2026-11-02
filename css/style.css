@@ -104,6 +104,19 @@ nav.cats button.promo-nav[aria-current="true"]{color:var(--navy)}
 .sim td.num,.sim th.num{text-align:right;font-variant-numeric:tabular-nums}
 .sim tr.out td{color:var(--faint)}
 .sim tr.cut td{border-bottom:2px solid var(--navy)}
+.sim-read{margin:4px 0 0;min-height:1.6em;font-size:13.5px;color:var(--mute);font-variant-numeric:tabular-nums}
+.sim-read b{color:var(--ink);font-weight:700}
+.sim-charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px 20px;margin-top:10px}
+.sch{margin:0}
+.sch figcaption{font-size:13.5px;font-weight:700}
+.sch figcaption span{font-weight:400;color:var(--mute);font-size:12.5px}
+.sch svg{display:block;width:100%;height:auto;overflow:visible;cursor:pointer}
+.sch .g{stroke:var(--line);stroke-width:1;vector-effect:non-scaling-stroke}
+.sch .t{fill:var(--mute);font-size:10px;font-variant-numeric:tabular-nums}
+.sch .ln{fill:none;stroke:var(--navy);stroke-width:2;stroke-linejoin:round;stroke-linecap:round;vector-effect:non-scaling-stroke}
+.sch .sel{stroke:var(--mute);stroke-width:1;vector-effect:non-scaling-stroke}
+.sch .hx{stroke:var(--faint);stroke-width:1;vector-effect:non-scaling-stroke}
+.sch .dot{fill:var(--navy);stroke:var(--surface);stroke-width:2;vector-effect:non-scaling-stroke}
 @media (max-width:600px){.sim .tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .dot{width:10px;height:10px;border-radius:50%;border:2px solid var(--line);justify-self:center}
 .dot.done{background:var(--ok);border-color:var(--ok)}
