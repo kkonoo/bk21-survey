@@ -29,26 +29,33 @@ function svPanel(){
   </div>`;
 }
 const doiNorm=v=>String(v||'').trim().toLowerCase().replace(/^https?:\/\/(dx\.)?doi\.org\//,'').replace(/^doi:\s*/,'');
-// Elsevier API 한 번 부르기: 성공하면 {d}, 실패하면 {status,err}
-async function svJSON(url,params){
+// Elsevier API 한 번 부르기: 성공하면 {d}, 실패하면 {status,err}.
+// 1초에 보낼 수 있는 요청 수 제한이 있어 요청 사이를 띄우고, 제한에 걸리면(429) 기다렸다 다시 (1·2·4·8·16초)
+const sleep=ms=>new Promise(f=>setTimeout(f,ms));
+let svLast=0;
+async function svJSON(url,params,tries=0){
   const q=new URLSearchParams(Object.assign({},params,{apiKey:svKey(),httpAccept:'application/json'}));
+  const wait=svLast+200-Date.now(); if(wait>0) await sleep(wait); svLast=Date.now();
   let r,t; try{r=await fetch(url+'?'+q);t=await r.text()}catch(e){return {status:0,err:'연결하지 못했어요'}}
+  if(r.status===429&&tries<5){const m=$('#sv-msg');if(m)m.textContent=`요청이 많다고 해서 잠깐 기다리는 중… (${2**tries}초)`;await sleep((+r.headers.get('Retry-After')||2**tries)*1000);return svJSON(url,params,tries+1)}
   let d=null; try{d=JSON.parse(t)}catch(e){}
-  if(!r.ok||!d) return {status:r.status,err:(d&&d['service-error']&&d['service-error'].status&&d['service-error'].status.statusText)||t.slice(0,150)};
+  const em=d&&((d['service-error']&&d['service-error'].status&&d['service-error'].status.statusText)||(d['error-response']&&d['error-response']['error-message']));
+  if(!r.ok||!d) return {status:r.status,err:em||t.slice(0,150)};
   return {d};
 }
+const svErr=r=>Object.assign(new Error(r.err),{status:r.status});
 // 묶음으로 묻고, 400(잘못된 값 하나 때문에 묶음 전체 실패)이면 하나씩 다시. 키·연결 오류면 멈춤
 async function svBatch(list,size,ask,label){
   const out=[];
   for(let k=0;k<list.length;k+=size){$('#sv-msg').textContent=`${label} ${k} / ${list.length}`;
     const b=list.slice(k,k+size), r=await ask(b);
     if(!r.err){out.push(r.d);continue}
-    if(r.status!==400) throw new Error(r.err);
+    if(r.status!==400) throw svErr(r);
     for(const x of b){const s=await ask([x]);if(!s.err)out.push(s.d)}
   }
   return out;
 }
-const svFail=e=>{$('#sv-msg').textContent=`불러오지 못했어요 (${e.message}). 교내 네트워크인지, 키가 맞는지 확인해 주세요.`};
+const svFail=e=>{$('#sv-msg').textContent=e.status===429?'Elsevier가 요청이 너무 많다고 해서 멈췄어요. 몇 분 뒤 다시 눌러 주세요 (이미 받은 결과는 다시 묻지 않아요).':`불러오지 못했어요 (${e.message}). 교내 네트워크인지, 키가 맞는지 확인해 주세요.`};
 async function svFetch(){
   const msg=$('#sv-msg'), P=S.data.profs.filter(p=>/^\d{6,}$/.test(p.scopus||''));
   if(!svKey()){toast('Elsevier API 키를 넣어 주세요');$('#sv-key').focus();return}
@@ -67,9 +74,10 @@ async function svFetch(){
 }
 // DOI → Scopus 번호 (Scopus 검색, 20개씩). 괄호·빈칸이 있는 DOI는 {정확히}로
 const svQ=d=>/[()\s]/.test(d)?`DOI({${d}})`:`DOI(${d})`;
+S.svSid={}; S.svAu={}; // 이 화면에서 이미 받은 결과 (다시 눌러도 다시 묻지 않음)
 async function svSids(dois){
-  const sid={};
-  (await svBatch(dois,20,b=>svJSON(EL+'/content/search/scopus',{query:b.map(svQ).join(' OR '),count:'25',field:'dc:identifier,prism:doi'}),'논문 찾는 중…'))
+  const sid=S.svSid;
+  (await svBatch(dois.filter(d=>!sid[d]),20,b=>svJSON(EL+'/content/search/scopus',{query:b.map(svQ).join(' OR '),count:'25',field:'dc:identifier,prism:doi'}),'논문 찾는 중…'))
     .forEach(d=>((d['search-results']||{}).entry||[]).forEach(e=>{const k=doiNorm(e['prism:doi']),id=String(e['dc:identifier']||'').split(':')[1];if(k&&id)sid[k]=id}));
   return sid;
 }
@@ -80,7 +88,7 @@ async function svPaperFill(){
   const dois=[...new Set(todo.map(i=>doiNorm(i.f.doi)))], byId={}; let sid;
   try{
     sid=await svSids(dois);
-    (await svBatch([...new Set(Object.values(sid))],25,b=>svJSON(EL+'/analytics/scival/publication/metrics',{publicationIds:b.join(','),metricTypes:'FieldWeightedCitationImpact'}),'FWCI 받는 중…'))
+    (await svBatch([...new Set(dois.map(d=>sid[d]).filter(Boolean))],25,b=>svJSON(EL+'/analytics/scival/publication/metrics',{publicationIds:b.join(','),metricTypes:'FieldWeightedCitationImpact'}),'FWCI 받는 중…'))
       .forEach(d=>(d.results||[]).forEach(x=>{const v=((x.metrics||[])[0]||{}).valueByYear||{}, val=v[x.publication.publicationYear]??Object.values(v).find(y=>y!=null);if(val!=null)byId[String(x.publication.id)]=val}));
   }catch(e){svFail(e);return}
   const fw=d=>sid[d]&&byId[sid[d]]!=null?String(byId[sid[d]]):null, nf=dois.filter(d=>!sid[d]).length, nv=dois.filter(d=>sid[d]&&fw(d)===null).length;
@@ -109,14 +117,14 @@ async function svIds(){
 S.svFind=null;
 async function svFindIds(){
   if(!svKey()){toast('Elsevier API 키를 넣어 주세요');$('#sv-key').focus();return}
-  const pick={}, au={}; S.data.profs.forEach(p=>{pick[p.id]=[...new Set(itemsOf(p.id,'paper').sort((a,b)=>dkey(b)-dkey(a)).map(i=>doiNorm(i.f.doi)).filter(Boolean))].slice(0,6)});
+  const pick={}, au=S.svAu; S.data.profs.forEach(p=>{pick[p.id]=[...new Set(itemsOf(p.id,'paper').sort((a,b)=>dkey(b)-dkey(a)).map(i=>doiNorm(i.f.doi)).filter(Boolean))].slice(0,6)});
   let sid;
   try{sid=await svSids([...new Set(Object.values(pick).flat())]);
-    const ids=[...new Set(Object.values(sid))];
-    for(let k=0;k<ids.length;k+=5){$('#sv-msg').textContent=`저자 확인 중… ${k} / ${ids.length}`;
-      await Promise.all(ids.slice(k,k+5).map(async id=>{const r=await svJSON(EL+'/analytics/scival/publication/'+id,{});
-        if(r.err){if(r.status!==400&&r.status!==404)throw new Error(r.err);return}
-        au[id]=((r.d.publication||{}).authors||[]).map(a=>({id:String(a.id),name:a.name||''}))}))}
+    const ids=[...new Set(Object.values(pick).flat().map(d=>sid[d]).filter(id=>id&&!au[id]))];
+    for(let k=0;k<ids.length;k++){$('#sv-msg').textContent=`저자 확인 중… ${k} / ${ids.length}`;
+      const r=await svJSON(EL+'/analytics/scival/publication/'+ids[k],{});
+      if(r.err){if(r.status!==400&&r.status!==404)throw svErr(r);continue}
+      au[ids[k]]=((r.d.publication||{}).authors||[]).map(a=>({id:String(a.id),name:a.name||''}))}
   }catch(e){svFail(e);return}
   const R=S.data.profs.map(p=>{const A=pick[p.id].map(d=>au[sid[d]]).filter(Boolean), cnt={}, nm={};
     A.forEach(a=>{a.forEach(x=>nm[x.id]=x.name);new Set(a.map(x=>x.id)).forEach(id=>cnt[id]=(cnt[id]||0)+1)});
