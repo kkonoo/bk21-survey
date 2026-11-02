@@ -2,18 +2,21 @@
 /* ===== JCR (IF · 상위 %) ===== */
 const jnorm=s=>String(s||'').toUpperCase().replace(/&/g,'AND').replace(/[^A-Z0-9]/g,'');
 const inorm=s=>String(s||'').toUpperCase().replace(/[^0-9X]/g,'');
+const deHTML=s=>String(s||'').replace(/&amp;/gi,'&').replace(/&lt;/gi,'<').replace(/&gt;/gi,'>').replace(/&quot;/gi,'"').replace(/&#0?39;|&apos;/gi,"'");
+// 저널명 표기 차이(Crossref의 &amp;, 앞의 The)도 찾게 이름 키를 여러 개 만든다
+const nameKeys=n=>{if(!n)return [];const d=deHTML(n);return [...new Set([n,d,d.replace(/^\s*the\s+/i,'')].map(x=>'N'+jnorm(x)))].filter(k=>k.length>1)};
 function jbucket(k){let h=0;for(const ch of k)h=(h*31+ch.charCodeAt(0))>>>0;return h%32}
 async function jcrDoc(id){if(!(id in S.jcrCache)){const d=await db.doc('jcr/'+id).get();S.jcrCache[id]=d.exists?(d.data().e||{}):{}}return S.jcrCache[id]}
 // 출판 당시 JCR 연도: JCR은 매년 6월 말에 전년도 값이 나오므로 7월 이후 출판은 전년도, 1–6월은 전전년도. 월이 없으면 전년도.
 function pubJcrYear(ym){const m=String(ym||'').match(/(\d{4})(?:\D+(\d{1,2}))?/);if(!m)return 0;const y=+m[1],mo=+m[2]||0;return mo&&mo<7?y-2:y-1}
 async function jcrExact(issns,name,year){
-  const keys=[...(issns||[]).map(x=>'I'+inorm(x)).filter(k=>k.length===9),...(name?['N'+jnorm(name)]:[])];
+  const keys=[...(issns||[]).map(x=>'I'+inorm(x)).filter(k=>k.length===9),...nameKeys(name)];
   if(!year||!keys.length||!S.data.jcrYears.map(Number).includes(+year)) return null;
   for(const k of keys){const e=(await jcrDoc(year+'_'+jbucket(k)))[k];if(e)return {if:e[0],pct:e[1],year:+year}}
   return null;
 }
 async function jcrLookup(issns,name,year){
-  const keys=[...(issns||[]).map(x=>'I'+inorm(x)).filter(k=>k.length===9),...(name?['N'+jnorm(name)]:[])];
+  const keys=[...(issns||[]).map(x=>'I'+inorm(x)).filter(k=>k.length===9),...nameKeys(name)];
   const ys=S.data.jcrYears.map(Number).sort((a,b)=>b-a); if(!keys.length||!ys.length) return null;
   const y0=Number(year)||ys[0], order=[...ys.filter(y=>y<=y0),...ys.filter(y=>y>y0).reverse()];
   for(const y of order) for(const k of keys){const e=(await jcrDoc(y+'_'+jbucket(k)))[k];if(e)return {if:e[0],pct:e[1],year:y}}
@@ -62,17 +65,20 @@ async function jcrFill(){
   const msg=$('#jcr-msg'); if(!S.data.jcrYears.length){msg.textContent='먼저 JCR 자료를 올려 주세요.';return}
   const base=Number(S.data.jcrBase)||0;
   const todo=S.data.items.filter(i=>i.cat==='paper'&&i.f.journal);
+  // 이름으로 못 찾으면 DOI로 Crossref에서 ISSN을 받아 다시 찾는다 (JCR 이름이 다른 저널, 예: ANTIBIOTICS-BASEL)
+  const iss={}, viaIssn=new Set(), issnOf=async doi=>{doi=doiNorm(doi);if(!doi)return [];if(!(doi in iss)){try{const r=await fetch('https://api.crossref.org/works/'+encodeURIComponent(doi));iss[doi]=r.ok?((await r.json()).message.ISSN||[]):[]}catch(e){iss[doi]=[]}}return iss[doi]};
+  const find=async(f,y)=>{const r=await jcrExact([],f.journal,y);if(r||!f.doi||!S.data.jcrYears.map(Number).includes(+y))return r;const x=await jcrExact(await issnOf(f.doi),f.journal,y);if(x)viaIssn.add(doiNorm(f.doi));return x};
   msg.textContent=`찾는 중… 0 / ${todo.length}`; const ups=[]; let k=0, nPub=0, nCur=0;
   for(const i of todo){k++;if(k%20===0)msg.textContent=`찾는 중… ${k} / ${todo.length}`;
     const f=Object.assign({},i.f);
-    if(!f.if||!f.jcr){const r=await jcrExact([],f.journal,pubJcrYear(f.ym));
+    if(!f.if||!f.jcr){const r=await find(f,pubJcrYear(f.ym));
       if(r){if(!f.if&&r.if!=null)f.if=String(r.if);if(!f.jcr&&r.pct!=null)f.jcr=String(r.pct);nPub++}
 }
-    if(base){const r=await jcrExact([],f.journal,base);const nv=r?[r.if!=null?String(r.if):'',r.pct!=null?String(r.pct):'']:['',''];
+    if(base){const r=await find(f,base);const nv=r?[r.if!=null?String(r.if):'',r.pct!=null?String(r.pct):'']:['',''];
       if(nv[0]!==(f.if_cur||'')||nv[1]!==(f.jcr_cur||'')){f.if_cur=nv[0];f.jcr_cur=nv[1]}if(r)nCur++}
     if(JSON.stringify(f)!==JSON.stringify(i.f)) ups.push([i,f])}
   if(!ups.length){msg.textContent='바뀌는 논문이 없어요.';return}
-  if(!confirm(`논문 ${ups.length}건을 고칠까요?\n· 출판 당시 IF·상위 %: 빈 칸만 채움 (JCR ${nPub}건)\n· 기준 연도${base?' '+base:''} IF·상위 %: ${base?`전부 다시 계산 (찾음 ${nCur}건)`:'기준 연도가 정해지지 않아 건너뜀'}`)){msg.textContent='';return}
+  if(!confirm(`논문 ${ups.length}건을 고칠까요? (저널 이름이 달라 DOI의 ISSN으로 찾은 논문 ${viaIssn.size}편)\n· 출판 당시 IF·상위 %: 빈 칸만 채움 (JCR ${nPub}건)\n· 기준 연도${base?' '+base:''} IF·상위 %: ${base?`전부 다시 계산 (찾음 ${nCur}건)`:'기준 연도가 정해지지 않아 건너뜀'}`)){msg.textContent='';return}
   try{for(let a=0;a<ups.length;a+=400){const b=db.batch();ups.slice(a,a+400).forEach(([i,f])=>b.update(db.doc('items/'+i.id),{f}));await b.commit()}
     ups.forEach(([i,f])=>i.f=f); msg.textContent=`${ups.length}건 고쳤어요.`}catch(e){fail(e)}
 }

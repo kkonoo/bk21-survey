@@ -92,7 +92,7 @@ async function doiFill(){
   try{
     const r=await fetch('https://api.crossref.org/works/'+encodeURIComponent(doi));if(!r.ok)throw 0;
     const m=(await r.json()).message;const dp=(m.issued&&m.issued['date-parts']&&m.issued['date-parts'][0])||[];
-    inp.value=doi;set('title',(m.title||[])[0]);set('journal',(m['container-title']||[])[0]);set('ym',dp[0]?dp[0]+'.'+String(dp[1]||1).padStart(2,'0'):'');
+    inp.value=doi;set('title',(m.title||[])[0]);set('journal',deHTML((m['container-title']||[])[0]));set('ym',dp[0]?dp[0]+'.'+String(dp[1]||1).padStart(2,'0'):'');
     set('vol',m.volume?(m.volume+(m.issue?'('+m.issue+')':'')):'');set('pages',m.page||m['article-number']||'');set('nauth',m.author?String(m.author.length):'');
     let extra='';
     try{const ym=dp[0]?dp[0]+'.'+(dp[1]||''):'', py=pubJcrYear(ym), base=Number(S.data.jcrBase)||0, iss=m.ISSN||[], jn=(m['container-title']||[])[0];
