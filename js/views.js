@@ -17,7 +17,7 @@ function render(){
   if(S.role==='board'){app.innerHTML=boardView();return}
   if(S.role==='prof'){ if(!prof(S.me.prof)){app.innerHTML='<div class="empty">교수 정보를 찾지 못했어요. BK 사무국에 알려 주세요.</div>';return} app.innerHTML=profView(S.me.prof,'prof'); }
   else if(S.role==='rev') app.innerHTML=S.open?backBar()+profView(S.open,'rev'):revHome();
-  else app.innerHTML=S.open?backBar()+profView(S.open,'admin'):adminHome();
+  else app.innerHTML=S.open?backBar()+profView(S.open,'admin'):S.adminView==='sim'?backBar()+simView():adminHome();
 }
 const curTheme=()=>document.documentElement.dataset.theme||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
 const backBar=()=>`<button class="btn ghost back" data-act="back">← 목록으로</button>`;
@@ -34,6 +34,7 @@ function navHTML(p,mode){
 }
 function profView(pid,mode){const p=prof(pid);if(!p)return '<div class="empty">교수 정보를 불러오지 못했어요.</div>';return `<div class="layout">${navHTML(p,mode)}<section>${S.cat==='home'||(S.cat==='promo'&&!promoOK(p,mode))||(S.cat==='hex'&&mode==='rev')?homePanel(p,mode):S.cat==='promo'?promoPanel(p):S.cat==='hex'?hexPanel(p):catPanel(p,CAT[S.cat],mode)}</section></div>`}
 
+const isNew=p=>(p.hired&&p.hired>='2017-03')||(!p.hired&&!!p.newflag); // 신임교수 (안내 화면 표시·참여 교수 시뮬레이션)
 // 안내 화면 맨 위 공지 (새 공지는 맨 앞에 넣기). 마감일이 들어가서 그릴 때마다 만듦
 const NOTICES=()=>[`<b>마감(${esc(S.data.deadline)})까지 실적 내용은 꼭 다 채워 주세요.</b> 증빙 첨부는 마감 뒤에 해도 돼요.`,PRIVACY_NOTE.replace('🔒 ','')+' 사진이면 가리고 찍거나, PDF면 가린 뒤 다시 저장해서 올려 주세요. 이미 올린 파일에 가리지 않은 정보가 있으면 BK 사무국에 알려 주세요 (카드에서 연결을 떼도 드라이브에는 파일이 남아요).'];
 function homePanel(p,mode){
@@ -54,7 +55,7 @@ function homePanel(p,mode){
     <div class="panel"><dl class="kv">
       <dt>구분</dt><dd>${mode!=='rev'?`<select data-pf="type" aria-label="기초/임상" style="max-width:100px">${['기초','임상'].map(t=>`<option ${t===p.type?'selected':''}>${t}</option>`).join('')}</select>`:esc(p.type)}${mode!=='rev'?` · <select data-pf="rank" aria-label="직급" style="max-width:200px"><option value="">직급 선택</option>${RANKS.map(r=>`<option ${r===p.rank?'selected':''}>${r}</option>`).join('')}</select>`:p.rank?' · '+esc(p.rank):''}</dd>
       <dt><label for="rid">연구자등록번호</label></dt><dd>${mode!=='rev'?`<input id="rid" class="mono" inputmode="numeric" value="${esc(p.rid||'')}" data-pf="rid" placeholder="8자리 숫자" style="max-width:180px">`:`<span class="mono">${esc(p.rid||'—')}</span>`}</dd>
-      <dt><label for="hired">국내 최초 임용일</label></dt><dd><input id="hired" type="date" value="${esc(p.hired||'')}" data-pf="hired" style="max-width:180px" ${ro}>${(p.hired&&p.hired>='2017-03')||(!p.hired&&p.newflag)?' <span class="chip pre">신임</span>':''}</dd>
+      <dt><label for="hired">국내 최초 임용일</label></dt><dd><input id="hired" type="date" value="${esc(p.hired||'')}" data-pf="hired" style="max-width:180px" ${ro}>${isNew(p)?' <span class="chip pre">신임</span>':''}</dd>
       <dt>지도학생</dt><dd>${itemsOf(p.id,'roster').filter(i=>['재학','수료'].includes(i.f.status)&&!NONGRAD.includes(i.f.degree)).length}명 (재학·수료 대학원생)</dd>
       <dt>담당 교수</dt><dd>${p.rev&&revName(p.rev)===p.name?'본인':esc(revName(p.rev))}</dd>
       <dt>확인 완료</dt><dd>${st.done} / ${CATS.length} 항목</dd>

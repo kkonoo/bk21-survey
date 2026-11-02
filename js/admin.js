@@ -14,6 +14,7 @@ function adminHome(){
   <div class="prog" style="margin-bottom:14px"><i style="width:${tot/all*100}%"></i></div>
   <details class="fold" ${fold('prog')}><summary><span class="caret" aria-hidden="true"></span>교수별 현황 표 (${P.length}명)</summary>
   <div class="tablebox"><table><thead><tr><th>교수</th><th>기초/임상</th><th>재학·수료생</th><th>담당 교수</th><th>확인 완료</th><th>실적</th><th>수정 요청</th><th>질문 대기</th><th>최근 수정</th><th></th></tr></thead><tbody>${rows}</tbody></table></div></details>
+  <div class="panel" style="margin-top:18px"><div class="head" style="margin-bottom:0;align-items:center"><div><h2 style="font-size:17px">참여 교수 시뮬레이션</h2><span class="msg">실적 순으로 줄 세워 몇 명까지 참여시킬 때 1인당 논문·IF·학생 수가 어떻게 되는지 봐요.</span></div><button class="btn primary" data-act="sim">열기</button></div></div>
   ${adminQPanel()}
   <div class="panel" style="margin-top:18px"><div class="head"><h2 style="font-size:17px">교수 추가</h2></div>
     <p class="msg">추가하면 그 교수님의 개인 링크도 함께 만들어져요. 담당 교수는 위 표에서 나중에 바꿀 수 있어요.</p>

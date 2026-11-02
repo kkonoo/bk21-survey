@@ -5,6 +5,7 @@ document.addEventListener('click',async e=>{
   if(b.dataset.role){S.role=b.dataset.role;S.open=null;S.cat='home';S.editing=null;S.tsv='';await refresh();return}
   if(b.dataset.cat){S.cat=b.dataset.cat;S.editing=null;render();return}
   if(b.dataset.goto){S.cat=b.dataset.goto;render();return}
+  if(b.dataset.simn){S.sim.n=+b.dataset.simn;simUpdate();return}
   if(b.dataset.open&&!e.target.closest('select')){S.open=b.dataset.open;S.cat='home';if(S.role==='rev'){S.busy=true;render();try{await loadProf(S.open)}catch(er){fail(er)}S.busy=false}render();return}
   const pid=curPid();
   if(b.dataset.delprof){await delProf(b.dataset.delprof);return}
@@ -36,7 +37,8 @@ document.addEventListener('click',async e=>{
   if(b.dataset.copy){try{await navigator.clipboard.writeText(b.dataset.copy);toast('링크를 복사했어요')}catch(_){toast('링크 칸을 눌러 선택한 뒤 복사해 주세요')}return}
   if(act==='refresh') await refresh();
   if(act==='theme'){const t=curTheme()==='dark'?'light':'dark';document.documentElement.dataset.theme=t;try{localStorage.setItem('theme',t)}catch(er){}render()}
-  if(act==='back'){S.open=null;S.cat='home';S.editing=null;await refresh()}
+  if(act==='back'){S.open=null;S.cat='home';S.editing=null;S.adminView='';await refresh()}
+  if(act==='sim'){S.adminView='sim';render();scrollTo(0,0)}
   if(act==='add'){S.editing='new';render();const f=document.querySelector('form.edit input,form.edit select');f&&f.focus()}
   if(act==='cancel'){S.editing=null;render()}
   if(act==='done'){const v=(prof(pid).done||{})[S.cat]?0:1;try{await touchProf(pid,{['done.'+S.cat]:v});toast(v?CAT[S.cat].name+' 확인 완료':'확인 완료를 취소했어요')}catch(er){fail(er)} render()}
@@ -69,6 +71,7 @@ document.addEventListener('change',async e=>{
   if(t.id==='me-rev'){S.me.rev=t.value||null;S.open=null;await refresh();return}
   if(t.id==='flt'){S.filterFix=t.checked;render();return}
   if(t.id==='recap-p'){S.recapP=t.value;render();return}
+  if(/^sim-(sort|ifk|from|to)$/.test(t.id)){S.sim[t.id.slice(4)]=t.value;render();return}
   if((t.name==='start'||t.name==='end')&&t.form&&t.form.querySelector('[data-years]')){const box=t.form.querySelector('[data-years]'),k=box.dataset.years,cur={};
     box.querySelectorAll('input').forEach(x=>{if(x.value.trim())cur[x.name.slice(k.length+1)]=x.value.trim()});box.innerHTML=yearBoxes(k,{start:t.form.elements.start.value,end:t.form.elements.end.value},cur);return}
   if(t.name==='degree'&&t.form&&t.form.elements.status){const st=t.form.elements.status,cur=st.value;st.innerHTML='<option value="">선택</option>'+STATUS_OF(t.value).map(o=>`<option ${o===cur?'selected':''}>${esc(o)}</option>`).join('');return}
@@ -90,6 +93,7 @@ document.addEventListener('change',async e=>{
 document.addEventListener('toggle',e=>{const k=e.target.dataset&&e.target.dataset.fold;if(k)S.fold[k]=e.target.open},true);
 document.addEventListener('input',e=>{
   if(e.target.id==='ai-key')setAiKey(e.target.value.trim());
+  if(e.target.id==='sim-n'){S.sim.n=+e.target.value;simUpdate()}
   if(e.target.dataset.max){const n=e.target.value.replace(/\s/g,'').length,m=+e.target.dataset.max;const c=document.querySelector(`[data-ctr="${e.target.name}"]`);c.textContent=`${n} / ${m}자 (공백 제외)`;c.classList.toggle('over',n>m)}
 });
 document.addEventListener('keydown',e=>{if(e.target.id==='ai-key'&&e.key==='Enter')e.preventDefault()}); // 키 칸에서 엔터로 저장되지 않게

@@ -89,12 +89,22 @@ nav.cats button.promo-nav[aria-current="true"]{color:var(--navy)}
 .hex text.v{fill:var(--mute);font-weight:500;font-size:12px;font-variant-numeric:tabular-nums}
 .hex td.num,.hex th.num{text-align:right;font-variant-numeric:tabular-nums}
 .hex td.wrap{white-space:normal;color:var(--mute);font-size:13px;min-width:240px;padding-inline:14px}
-.recap .tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
-.recap .tile{background:var(--sunk);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:2px}
-.recap .tile b{font-size:24px;font-weight:800;letter-spacing:-.02em;color:var(--navy);font-variant-numeric:tabular-nums}
-.recap .tile b small{font-size:14px;font-weight:600;margin-left:2px}
-.recap .tile span{font-size:13px;color:var(--mute)}
+.recap .tiles,.sim .tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.recap .tile,.sim .tile{background:var(--sunk);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:2px}
+.recap .tile b,.sim .tile b{font-size:24px;font-weight:800;letter-spacing:-.02em;color:var(--navy);font-variant-numeric:tabular-nums}
+.recap .tile b small,.sim .tile b small{font-size:14px;font-weight:600;margin-left:2px}
+.recap .tile span,.sim .tile span{font-size:13px;color:var(--mute)}
 .recap h3{font-size:16px;font-weight:700;margin:24px 0 8px}
+.sim .tiles{grid-template-columns:repeat(4,minmax(0,1fr));margin-top:16px}
+.sim .tile>small{font-size:12.5px;color:var(--mute);font-variant-numeric:tabular-nums}
+.sim .slide{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-top:18px}
+.sim .slide label{font-weight:700}
+.sim .slide input{flex:1 1 200px;width:auto;padding:0;border:0;background:none;accent-color:var(--navy)}
+.sim .slide b{font-size:20px;color:var(--navy);font-variant-numeric:tabular-nums;min-width:3.2em;text-align:right}
+.sim td.num,.sim th.num{text-align:right;font-variant-numeric:tabular-nums}
+.sim tr.out td{color:var(--faint)}
+.sim tr.cut td{border-bottom:2px solid var(--navy)}
+@media (max-width:600px){.sim .tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .dot{width:10px;height:10px;border-radius:50%;border:2px solid var(--line);justify-self:center}
 .dot.done{background:var(--ok);border-color:var(--ok)}
 .dot.fix{background:var(--warn);border-color:var(--warn)}
