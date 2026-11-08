@@ -45,7 +45,7 @@ async function unfile(iid,fid){
     const u=auth.currentUser;
     const r=await (await fetch(S.data.uploadUrl,{method:'POST',body:JSON.stringify({action:'delete',uid:u.uid,token:await u.getIdToken(),id:fid})})).json();
     if(!r.ok) throw new Error(r.error||'delete');
-  }catch(e){console.error(e);toast('드라이브에서 지우지 못했어요. 잠시 뒤 다시 해 주세요');return}
+  }catch(e){console.error(e);toast('지우지 못했어요. 잠시 뒤 다시 해 주세요');return}
   const list=(it.files||[]).filter(x=>x.id!==fid);
   try{await db.doc('items/'+iid).update({files:list});it.files=list;render();toast('증빙을 지웠어요')}catch(e){fail(e)}
 }
