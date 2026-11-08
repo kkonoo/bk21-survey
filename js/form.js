@@ -52,7 +52,7 @@ function itemHTML(i,c,mode){
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"><span class="chip ${rv[0]}">${rv[1]}</span>${chips.map(x=>`<span class="chip ${x[0]}">${esc(x[1])}</span>`).join('')}</div></div>
     <div class="acts">${mode!=='rev'?`${i.cat==='grant'&&(i.f.grole==='공동연구원'||i.f.knu==='아니오')?`<button class="btn sm" data-shareform="${i.id}">지분확인서</button>`:''}${S.data.uploadUrl?`<button class="btn sm" data-attach="${i.id}" title="민감한 개인정보는 가리고 올려 주세요">증빙 첨부</button>`:''}<button class="btn sm" data-edit="${i.id}">수정</button><button class="btn ghost sm" data-del="${i.id}">삭제</button>`:''}</div>
     ${open?detailHTML(i,c):''}
-    ${(i.files||[]).length?`<div class="files"><span>증빙</span>${i.files.map(x=>`<span><a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.n)}</a>${mode!=='rev'?`<button class="btn ghost sm" data-unfile="${i.id}" data-fid="${esc(x.id)}" aria-label="${esc(x.n)} 연결 해제">×</button>`:''}</span>`).join('')}</div>`:''}
+    ${(i.files||[]).length?`<div class="files"><span>증빙</span>${i.files.map(x=>`<span><a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.n)}</a>${mode!=='rev'?`<button class="btn ghost sm" data-unfile="${i.id}" data-fid="${esc(x.id)}" aria-label="${esc(x.n)} 삭제">×</button>`:''}</span>`).join('')}</div>`:''}
     ${i.f.note?`<div class="note" style="color:var(--ink)"><b>비고</b> ${esc(i.f.note)}</div>`:''}
     ${i.memo?`<div class="note" style="color:var(--mute)">참고${i.pre&&i.cat==='paper'?' (중간평가 1차조사, 2025년 기준)':''}: ${esc(i.memo)}${i.cat==='paper'?` · JCR 상위 ${i.f.jcr?esc(i.f.jcr)+'%':'% 미입력'}`:''}</div>`:''}
     ${i.rv.s==='fix'&&mode==='prof'?`<div class="note">담당 교수 의견: ${esc(i.rv.c)}</div>`:''}

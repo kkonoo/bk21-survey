@@ -36,7 +36,7 @@ function profView(pid,mode){const p=prof(pid);if(!p)return '<div class="empty">�
 
 const isNew=p=>(p.hired&&p.hired>='2017-03')||(!p.hired&&!!p.newflag); // 신임교수 (안내 화면 표시·참여 교수 시뮬레이션)
 // 안내 화면 맨 위 공지 (새 공지는 맨 앞에 넣기). 마감일이 들어가서 그릴 때마다 만듦
-const NOTICES=()=>[`<b>마감(${esc(S.data.deadline)})까지 실적 내용은 꼭 다 채워 주세요.</b> 증빙 첨부는 마감 뒤에 해도 돼요.`,PRIVACY_NOTE.replace('🔒 ','')+' 사진이면 가리고 찍거나, PDF면 가린 뒤 다시 저장해서 올려 주세요. 이미 올린 파일에 가리지 않은 정보가 있으면 BK 사무국에 알려 주세요 (카드에서 연결을 떼도 드라이브에는 파일이 남아요).'];
+const NOTICES=()=>[`<b>마감(${esc(S.data.deadline)})까지 실적 내용은 꼭 다 채워 주세요.</b> 증빙 첨부는 마감 뒤에 해도 돼요.`,PRIVACY_NOTE.replace('🔒 ','')+' 사진이면 가리고 찍거나, PDF면 가린 뒤 다시 저장해서 올려 주세요. 이미 올린 파일에 가리지 않은 정보가 있으면 BK 사무국에 알려 주세요 (카드에서 ×로 지워도 드라이브 휴지통에 30일 동안 남아요).'];
 function homePanel(p,mode){
   const st=stats(p), fixes=itemsOf(p.id).filter(i=>i.rv.s==='fix');
   const intro=mode==='prof'

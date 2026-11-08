@@ -38,7 +38,14 @@ async function uploadFile(iid,file){
 }
 async function unfile(iid,fid){
   const it=S.data.items.find(x=>x.id===iid); if(!it) return;
-  if(!confirm('이 증빙 파일 연결을 뗄까요? (드라이브의 파일은 남아 있어요)')) return;
+  if(!confirm('이 증빙 파일을 지울까요? 드라이브에서도 휴지통으로 옮겨져요')) return;
+  // 드라이브 파일을 먼저 휴지통으로 보내고 연결을 뗀다 (거꾸로 하면 실패할 때 드라이브에 파일만 남음)
+  toast('지우는 중…',60000);
+  try{
+    const u=auth.currentUser;
+    const r=await (await fetch(S.data.uploadUrl,{method:'POST',body:JSON.stringify({action:'delete',uid:u.uid,token:await u.getIdToken(),id:fid})})).json();
+    if(!r.ok) throw new Error(r.error||'delete');
+  }catch(e){console.error(e);toast('드라이브에서 지우지 못했어요. 잠시 뒤 다시 해 주세요');return}
   const list=(it.files||[]).filter(x=>x.id!==fid);
-  try{await db.doc('items/'+iid).update({files:list});it.files=list;render()}catch(e){fail(e)}
+  try{await db.doc('items/'+iid).update({files:list});it.files=list;render();toast('증빙을 지웠어요')}catch(e){fail(e)}
 }

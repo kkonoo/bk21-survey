@@ -11,5 +11,6 @@ https://kkonoo.github.io/bk21-survey/
   - `admin.js` 관리자 화면 · `sim.js` 참여 교수 시뮬레이션 · `scival.js` SciVal (FWCI) · `attach.js` 지분확인서·증빙 첨부 · `jcr.js` JCR · `ai.js` 자동 채우기
   - `events.js` 클릭·저장 이벤트와 시작
 - `forms/` 지분확인서 양식 · `vendor/` JSZip
+- `apps-script/upload.gs` 증빙 업로드 서버. 구글 드라이브의 Apps Script 'BK21 증빙 업로드'에 붙여 넣고 배포해요 (이 저장소에서는 실행되지 않아요)
 
 코드를 고치면 `index.html`에서 바뀐 파일의 `?v=` 값을 올려 주세요. 브라우저에 남아 있던 옛 파일을 쓰지 않게 하려는 거예요.
