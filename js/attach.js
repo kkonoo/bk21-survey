@@ -38,7 +38,7 @@ async function uploadFile(iid,file){
 }
 async function unfile(iid,fid){
   const it=S.data.items.find(x=>x.id===iid); if(!it) return;
-  if(!confirm('이 증빙 파일을 지울까요? 드라이브에서도 휴지통으로 옮겨져요')) return;
+  if(!confirm('이 증빙 파일을 지울까요?')) return;
   // 드라이브 파일을 먼저 휴지통으로 보내고 연결을 뗀다 (거꾸로 하면 실패할 때 드라이브에 파일만 남음)
   toast('지우는 중…',60000);
   try{
