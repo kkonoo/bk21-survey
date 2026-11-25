@@ -99,8 +99,8 @@ function catRows(ck){
 function exportXlsx(){
   if(!window.XLSX){toast('엑셀 도구를 불러오지 못했어요');return}
   const wb=XLSX.utils.book_new();
-  const ph=[['교수','기초/임상','직급','연구자등록번호','국내 최초 임용일','기금교수','담당 교수','확인 완료','실적 건수','수정 요청','최근 수정']]
-    .concat(S.data.profs.map(p=>{const st=stats(p);return [p.name,p.type,p.rank||'',p.rid||'',p.hired||'',/^기금교수/.test(p.rank||'')?'예':(p.rank?'아니오':''),revName(p.rev),st.done+'/'+CATS.length,st.n,st.fix,p.updated||'']}));
+  const ph=[['교수','영문 이름','세부전공','기초/임상','직급','연구자등록번호','국내 최초 임용일','기금교수','담당 교수','확인 완료','실적 건수','수정 요청','최근 수정']]
+    .concat(S.data.profs.map(p=>{const st=stats(p);return [p.name,p.ename||'',p.major||'',p.type,p.rank||'',p.rid||'',p.hired||'',/^기금교수/.test(p.rank||'')?'예':(p.rank?'아니오':''),revName(p.rev),st.done+'/'+CATS.length,st.n,st.fix,p.updated||'']}));
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(ph),'교수 현황');
   CATS.forEach(c=>XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(catRows(c.key)),c.name.replace(/[\\/?*\[\]:]/g,'·').slice(0,31)));
   const d=new Date(), rg=(S.range.from||S.range.to)?`_${(S.range.from||'처음').replace('-','')}-${(S.range.to||'현재').replace('-','')}`:'';XLSX.writeFile(wb,`BK21_실적조사${rg}_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.xlsx`);

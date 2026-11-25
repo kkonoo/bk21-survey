@@ -53,6 +53,8 @@ function homePanel(p,mode){
   <div class="welcome">
     <div class="panel">${intro}</div>
     <div class="panel"><dl class="kv">
+      <dt><label for="ename">영문 이름</label></dt><dd>${mode!=='rev'?`<input id="ename" value="${esc(p.ename||'')}" data-pf="ename" placeholder="예: Gildong Hong" autocomplete="off" style="max-width:240px">`:esc(p.ename||'—')}</dd>
+      <dt><label for="major">세부전공</label></dt><dd>${mode!=='rev'?`<input id="major" value="${esc(p.major||'')}" data-pf="major" placeholder="예: 분자생리학" style="max-width:240px">`:esc(p.major||'—')}</dd>
       <dt>구분</dt><dd>${mode!=='rev'?`<select data-pf="type" aria-label="기초/임상" style="max-width:100px">${['기초','임상'].map(t=>`<option ${t===p.type?'selected':''}>${t}</option>`).join('')}</select>`:esc(p.type)}${mode!=='rev'?` · <select data-pf="rank" aria-label="직급" style="max-width:200px"><option value="">직급 선택</option>${RANKS.map(r=>`<option ${r===p.rank?'selected':''}>${r}</option>`).join('')}</select>`:p.rank?' · '+esc(p.rank):''}</dd>
       <dt><label for="rid">연구자등록번호</label></dt><dd>${mode!=='rev'?`<input id="rid" class="mono" inputmode="numeric" value="${esc(p.rid||'')}" data-pf="rid" placeholder="8자리 숫자" style="max-width:180px">`:`<span class="mono">${esc(p.rid||'—')}</span>`}</dd>
       <dt><label for="scopus">Scopus Author ID</label></dt><dd>${mode!=='rev'?`<input id="scopus" class="mono" inputmode="numeric" value="${esc(p.scopus||'')}" data-pf="scopus" placeholder="11자리 숫자" style="max-width:180px">`:`<span class="mono">${esc(p.scopus||'—')}</span>`}${mode==='admin'&&svOf(p)?`<div class="msg">SciVal ${svText(svOf(p))}</div>`:''}</dd>
@@ -61,7 +63,7 @@ function homePanel(p,mode){
       <dt>담당 교수</dt><dd>${p.rev&&revName(p.rev)===p.name?'본인':esc(revName(p.rev))}</dd>
       <dt>확인 완료</dt><dd>${st.done} / ${CATS.length} 항목</dd>
     </dl><div class="prog" style="margin-top:12px"><i style="width:${st.done/CATS.length*100}%"></i></div>
-    ${mode==='prof'?`<p class="msg" style="margin-top:10px">직급, 연구자등록번호, Scopus Author ID는 위에서 직접 고칠 수 있어요. Scopus Author ID는 scopus.com 저자 화면 주소의 <span class="mono">authorId=</span> 뒤 숫자예요.</p>`:''}</div>
+    ${mode==='prof'?`<p class="msg" style="margin-top:10px">영문 이름, 세부전공, 직급, 연구자등록번호, Scopus Author ID는 위에서 직접 고칠 수 있어요. Scopus Author ID는 scopus.com 저자 화면 주소의 <span class="mono">authorId=</span> 뒤 숫자예요.</p>`:''}</div>
   </div>
   <div class="panel"><div class="head"><h2 style="font-size:17px">수정 요청 ${fixes.length}건</h2></div>
     ${fixes.length?`<div class="items">${fixes.map(i=>`<div class="item fix"><div><div class="t">${esc(CAT[i.cat].title(i.f))}</div><div class="meta"><span>${CAT[i.cat].name}</span></div></div><div class="acts"><button class="btn sm" data-goto="${i.cat}">열기</button></div><div class="note">의견: ${esc(i.rv.c)}</div></div>`).join('')}</div>`
